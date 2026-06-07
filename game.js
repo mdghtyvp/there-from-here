@@ -200,17 +200,14 @@
     msgEl.textContent = '';
   }
 
-  function useHint(n) {
-    if (submitted || hintsUsed >= n) return;
-    if (n !== hintsUsed + 1) return; // cumulative, in order
-    hintsUsed = n;
-    if (n === 1) maxScore = 85;
-    else if (n === 2) maxScore = 70;
-    else if (n === 3) maxScore = 55;
-    document.getElementById('hint' + n).classList.add('used');
-    if (n < 3) {
-      // disable lower already-used handled, but keep next enabled
-    }
+  function useHint() {
+    if (submitted || hintsUsed >= 3) return;
+    hintsUsed++;
+    if (hintsUsed === 1) maxScore = 85;
+    else if (hintsUsed === 2) maxScore = 70;
+    else if (hintsUsed === 3) maxScore = 55;
+    document.getElementById('pip' + hintsUsed).classList.add('checked');
+    if (hintsUsed >= 3) document.getElementById('hint-btn').disabled = true;
     maxNote.textContent = 'Max score: ' + maxScore;
     rebuildOverlays();
   }
@@ -315,7 +312,7 @@
   }
 
   function disableControls() {
-    ['undo-btn', 'clear-btn', 'submit-btn', 'hint1', 'hint2', 'hint3'].forEach(function (id) {
+    ['undo-btn', 'clear-btn', 'submit-btn', 'hint-btn'].forEach(function (id) {
       document.getElementById(id).disabled = true;
     });
   }
@@ -473,9 +470,7 @@
     document.getElementById('undo-btn').onclick = undo;
     document.getElementById('clear-btn').onclick = clearAll;
     document.getElementById('submit-btn').onclick = submit;
-    document.getElementById('hint1').onclick = function () { useHint(1); };
-    document.getElementById('hint2').onclick = function () { useHint(2); };
-    document.getElementById('hint3').onclick = function () { useHint(3); };
+    document.getElementById('hint-btn').onclick = useHint;
   }
 
   // ---------- Load puzzles ----------

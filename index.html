@@ -12,7 +12,6 @@
       --forest: #2d5016;
       --slate: #6b7280;
       --barn: #8b2020;
-      --cream: #f5f0e8;
       --mud: #8b6914;
       --ink: #3a3226;
     }
@@ -21,12 +20,7 @@
       margin: 0; padding: 0;
       font-family: 'Poppins', sans-serif;
       color: var(--ink);
-      background-color: var(--cream);
-      background-image:
-        radial-gradient(circle at 20% 30%, rgba(139,105,20,0.04) 0, transparent 60%),
-        radial-gradient(circle at 80% 70%, rgba(45,80,22,0.04) 0, transparent 60%),
-        repeating-linear-gradient(0deg, rgba(0,0,0,0.012) 0, rgba(0,0,0,0.012) 1px, transparent 1px, transparent 4px),
-        repeating-linear-gradient(90deg, rgba(0,0,0,0.012) 0, rgba(0,0,0,0.012) 1px, transparent 1px, transparent 4px);
+      background: #fff;
     }
     #game-container {
       max-width: 520px;
@@ -41,7 +35,6 @@
       margin: 0 0 2px;
       letter-spacing: -0.5px;
     }
-    header h1 .eagle { font-size: 0.9em; }
     header .sub {
       font-size: 0.82rem;
       color: var(--slate);
@@ -53,7 +46,7 @@
       max-width: 360px;
       margin: 0 auto;
       aspect-ratio: 300 / 450;
-      background: var(--cream);
+      background: #fff;
       border-radius: 6px;
       touch-action: none;
     }
@@ -64,7 +57,7 @@
     }
     #draw-canvas { cursor: crosshair; touch-action: none; }
     .vt-outline {
-      fill: rgba(255,255,255,0.55);
+      fill: rgba(245,240,232,0.6);
       stroke: var(--ink);
       stroke-width: 2.2;
       stroke-linejoin: round;
@@ -74,12 +67,12 @@
     .point-label {
       font-family: 'Poppins', sans-serif;
       font-size: 13px; font-weight: 700; fill: var(--ink);
-      paint-order: stroke; stroke: var(--cream); stroke-width: 3px;
+      paint-order: stroke; stroke: #fff; stroke-width: 3px;
     }
     .point-name {
       font-family: 'Poppins', sans-serif;
       font-size: 10px; font-weight: 600; fill: var(--forest);
-      paint-order: stroke; stroke: var(--cream); stroke-width: 3px;
+      paint-order: stroke; stroke: #fff; stroke-width: 3px;
     }
     .mtn-line { fill: none; stroke: var(--forest); stroke-width: 2.5; stroke-dasharray: 2 5; stroke-linecap: round; opacity: 0.7; }
     .mtn-label { font-family: 'Poppins'; font-style: italic; font-size: 9px; fill: var(--forest); }
@@ -87,30 +80,106 @@
     .shield { fill: var(--mud); stroke: #fff; stroke-width: 1; }
     .shield-label { font-family: 'Poppins'; font-size: 7px; font-weight: 700; fill: #fff; text-anchor: middle; }
 
-    #controls { margin-top: 16px; }
-    .hint-row { display: flex; gap: 8px; justify-content: center; margin-bottom: 12px; flex-wrap: wrap; }
-    .action-row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
-    button {
+    /* Submit button — prominent, directly under map */
+    #submit-wrap {
+      max-width: 360px;
+      margin: 12px auto 0;
+    }
+    #submit-btn {
+      width: 100%;
+      font-family: 'Poppins', sans-serif;
+      font-weight: 700;
+      font-size: 1rem;
+      padding: 14px;
+      border: 2px solid var(--forest);
+      border-radius: 10px;
+      background: var(--forest);
+      color: #fff;
+      cursor: pointer;
+      transition: transform 0.08s, opacity 0.15s;
+      box-shadow: 2px 2px 0 rgba(45,80,22,0.25);
+    }
+    #submit-btn:active { transform: translate(1px,1px); box-shadow: 1px 1px 0 rgba(45,80,22,0.25); }
+    #submit-btn:disabled { opacity: 0.4; cursor: default; box-shadow: none; }
+
+    /* Controls bar */
+    #controls { margin-top: 14px; max-width: 360px; margin-left: auto; margin-right: auto; }
+    .controls-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    /* Icon buttons */
+    .icon-btn {
+      background: none;
+      border: none;
+      padding: 6px;
+      cursor: pointer;
+      color: var(--slate);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.75rem;
+      font-weight: 600;
+      transition: color 0.15s;
+      border-radius: 6px;
+    }
+    .icon-btn:hover { color: var(--ink); }
+    .icon-btn:disabled { opacity: 0.35; cursor: default; }
+    .icon-btn svg { width: 20px; height: 20px; flex-shrink: 0; }
+
+    /* Hint controls */
+    .hint-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    #hint-btn {
       font-family: 'Poppins', sans-serif;
       font-weight: 600;
-      font-size: 0.85rem;
-      padding: 10px 14px;
+      font-size: 0.8rem;
+      padding: 7px 14px;
       border: 2px solid var(--ink);
-      border-radius: 10px;
+      border-radius: 8px;
       background: #fff;
       color: var(--ink);
       cursor: pointer;
-      transition: transform 0.08s, background 0.15s;
-      box-shadow: 2px 2px 0 rgba(58,50,38,0.18);
+      transition: transform 0.08s;
+      box-shadow: 2px 2px 0 rgba(58,50,38,0.15);
+      white-space: nowrap;
     }
-    button:active { transform: translate(1px,1px); box-shadow: 1px 1px 0 rgba(58,50,38,0.18); }
-    button:disabled { opacity: 0.45; cursor: default; box-shadow: none; }
-    .hint-btn { font-size: 0.75rem; padding: 8px 10px; background: var(--cream); }
-    .hint-btn.used { background: var(--mud); color: #fff; border-color: var(--mud); }
-    #submit-btn { background: var(--forest); color: #fff; border-color: var(--forest); }
-    #clear-btn { background: var(--barn); color: #fff; border-color: var(--barn); }
-    .max-note { text-align: center; font-size: 0.72rem; color: var(--slate); margin-top: 6px; min-height: 1em; }
-    #msg { text-align: center; color: var(--barn); font-weight: 600; font-size: 0.82rem; min-height: 1.1em; margin-top: 8px; }
+    #hint-btn:active { transform: translate(1px,1px); }
+    #hint-btn:disabled { opacity: 0.4; cursor: default; box-shadow: none; }
+    .hint-pips {
+      display: flex;
+      gap: 5px;
+      align-items: center;
+    }
+    .pip {
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      border: 2px solid var(--slate);
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.2s, border-color 0.2s;
+      flex-shrink: 0;
+    }
+    .pip.checked {
+      background: var(--mud);
+      border-color: var(--mud);
+    }
+    .pip.checked::after {
+      content: '';
+      display: block;
+      width: 4px; height: 7px;
+      border: 2px solid #fff;
+      border-top: none; border-left: none;
+      transform: rotate(45deg) translate(-1px, -1px);
+    }
+
+    .max-note { font-size: 0.72rem; color: var(--slate); margin-top: 8px; text-align: center; min-height: 1em; }
+    #msg { text-align: center; color: var(--barn); font-weight: 600; font-size: 0.82rem; min-height: 1.1em; margin-top: 6px; }
 
     #results {
       margin-top: 20px;
@@ -118,14 +187,23 @@
       padding: 18px 16px;
       border: 2px solid var(--ink);
       border-radius: 14px;
-      background: rgba(255,255,255,0.65);
-      box-shadow: 3px 3px 0 rgba(58,50,38,0.15);
+      background: #fff;
+      box-shadow: 3px 3px 0 rgba(58,50,38,0.1);
     }
     #score-num { font-size: 3rem; font-weight: 700; color: var(--forest); line-height: 1; }
     #score-num span { font-size: 1.2rem; color: var(--slate); }
     #band { font-weight: 700; font-size: 1.05rem; margin: 8px 0 4px; color: var(--barn); }
     .stats { font-size: 0.85rem; color: var(--ink); margin: 10px 0; line-height: 1.6; }
-    #share-btn { background: var(--forest); color: #fff; border-color: var(--forest); margin-top: 6px; }
+    #share-btn {
+      font-family: 'Poppins', sans-serif;
+      font-weight: 600; font-size: 0.9rem;
+      padding: 10px 20px;
+      border: 2px solid var(--forest);
+      border-radius: 10px;
+      background: var(--forest); color: #fff;
+      cursor: pointer; margin-top: 6px;
+      box-shadow: 2px 2px 0 rgba(45,80,22,0.2);
+    }
     #countdown { margin-top: 14px; font-size: 0.8rem; color: var(--slate); }
     #countdown b { color: var(--ink); font-variant-numeric: tabular-nums; }
     .hidden { display: none !important; }
@@ -134,7 +212,7 @@
 <body>
   <div id="game-container">
     <header>
-      <h1>There From Here <span class="eagle">🦅</span></h1>
+      <h1>There From Here</h1>
       <div class="sub" id="puzzle-meta">Loading today's puzzle&hellip;</div>
     </header>
 
@@ -143,18 +221,38 @@
       <canvas id="draw-canvas" width="300" height="450"></canvas>
     </div>
 
+    <div id="submit-wrap">
+      <button id="submit-btn">Submit Route</button>
+    </div>
+
     <div id="controls">
-      <div class="hint-row">
-        <button class="hint-btn" id="hint1" data-hint="1">Hint 1: Names</button>
-        <button class="hint-btn" id="hint2" data-hint="2">Hint 2: Mountains</button>
-        <button class="hint-btn" id="hint3" data-hint="3">Hint 3: Interstates</button>
+      <div class="controls-row">
+        <!-- Undo / Clear icons -->
+        <button class="icon-btn" id="undo-btn" title="Undo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 14L4 9l5-5"/>
+            <path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>
+          </svg>
+          Undo
+        </button>
+        <button class="icon-btn" id="clear-btn" title="Start over">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+            <path d="M3 3v5h5"/>
+          </svg>
+          Start Over
+        </button>
+        <!-- Hint button + pip indicators -->
+        <div class="hint-controls">
+          <button id="hint-btn">Hint</button>
+          <div class="hint-pips">
+            <div class="pip" id="pip1"></div>
+            <div class="pip" id="pip2"></div>
+            <div class="pip" id="pip3"></div>
+          </div>
+        </div>
       </div>
-      <div class="action-row">
-        <button id="undo-btn">Undo Point</button>
-        <button id="clear-btn">Start Over</button>
-        <button id="submit-btn">Submit Route</button>
-      </div>
-      <div class="max-note" id="max-note">Max score: 100</div>
+      <div class="max-note" id="max-note"></div>
       <div id="msg"></div>
     </div>
 
@@ -167,8 +265,6 @@
     </div>
   </div>
   <script>
-  /* Embedded copy of puzzles.json so the game also works under file:// where fetch is blocked.
-     Keep in sync with puzzles.json. */
   window.PUZZLES_FALLBACK = {
     "puzzles": [
       { "id": 1, "date": "2026-06-07",
