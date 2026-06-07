@@ -435,7 +435,7 @@
       msgEl.textContent = '';
       finishScoring(snapped, false);
     }).catch(function () {
-      msgEl.textContent = 'scored without road snapping';
+      msgEl.textContent = '';
       finishScoring(null, true);
     });
   }
