@@ -9,17 +9,106 @@
   var PAD = 14; // px padding inside viewbox
 
   function project(lat, lng) {
+    var mercLat = Math.log(Math.tan(Math.PI / 4 + lat * Math.PI / 360));
+    var mercN = Math.log(Math.tan(Math.PI / 4 + BOUNDS.north * Math.PI / 360));
+    var mercS = Math.log(Math.tan(Math.PI / 4 + BOUNDS.south * Math.PI / 360));
     var x = PAD + (lng - BOUNDS.west) / (BOUNDS.east - BOUNDS.west) * (SVG_W - 2 * PAD);
-    var y = PAD + (BOUNDS.north - lat) / (BOUNDS.north - BOUNDS.south) * (SVG_H - 2 * PAD);
+    var y = PAD + (mercN - mercLat) / (mercN - mercS) * (SVG_H - 2 * PAD);
     return { x: x, y: y };
   }
 
-  // Vermont outline (lat, lng), clockwise from NW.
+  function unproject(x, y) {
+    var lng = BOUNDS.west + (x - PAD) / (SVG_W - 2 * PAD) * (BOUNDS.east - BOUNDS.west);
+    var mercN = Math.log(Math.tan(Math.PI / 4 + BOUNDS.north * Math.PI / 360));
+    var mercS = Math.log(Math.tan(Math.PI / 4 + BOUNDS.south * Math.PI / 360));
+    var mercLat = mercN - (y - PAD) / (SVG_H - 2 * PAD) * (mercN - mercS);
+    var lat = (Math.atan(Math.exp(mercLat)) - Math.PI / 4) * 360 / Math.PI;
+    return { lat: lat, lng: lng };
+  }
+
+  // Vermont outline (lat, lng), clockwise from NW. Fallback if GeoJSON fetch fails.
   var VT_POLY = [
     [45.013, -73.343], [45.017, -72.103], [44.916, -71.503], [44.503, -71.573],
     [43.572, -72.456], [42.726, -72.456], [42.726, -73.265], [43.150, -73.404],
     [43.570, -73.438], [44.020, -73.338], [44.500, -73.370], [45.013, -73.343]
   ];
+
+  // SVG path string for the Vermont border; built from GeoJSON at init, else fallback.
+  var vermontPath = null;
+
+  // ---------- Geometry helpers (RDP simplification) ----------
+  function rdpSimplify(points, epsilon) {
+    if (points.length < 3) return points;
+    var maxDist = 0, maxIdx = 0;
+    var start = points[0], end = points[points.length - 1];
+    for (var i = 1; i < points.length - 1; i++) {
+      var d = perpendicularDistance(points[i], start, end);
+      if (d > maxDist) { maxDist = d; maxIdx = i; }
+    }
+    if (maxDist > epsilon) {
+      var left = rdpSimplify(points.slice(0, maxIdx + 1), epsilon);
+      var right = rdpSimplify(points.slice(maxIdx), epsilon);
+      return left.slice(0, -1).concat(right);
+    }
+    return [start, end];
+  }
+  function perpendicularDistance(p, a, b) {
+    var dx = b[0] - a[0], dy = b[1] - a[1];
+    if (dx === 0 && dy === 0) return Math.hypot(p[0] - a[0], p[1] - a[1]);
+    var t = ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / (dx * dx + dy * dy);
+    return Math.hypot(p[0] - (a[0] + t * dx), p[1] - (a[1] + t * dy));
+  }
+
+  // ---------- Vermont border (GeoJSON) ----------
+  var VT_GEOJSON_URL = 'https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json';
+
+  function buildVermontPath() {
+    return fetch(VT_GEOJSON_URL)
+      .then(function (r) { if (!r.ok) throw new Error('geojson fetch failed'); return r.json(); })
+      .then(function (gj) {
+        var feature = null;
+        for (var i = 0; i < gj.features.length; i++) {
+          if (gj.features[i].properties && gj.features[i].properties.name === 'Vermont') {
+            feature = gj.features[i]; break;
+          }
+        }
+        if (!feature) throw new Error('Vermont not found');
+        var geom = feature.geometry;
+        // Pick the largest ring (handles Polygon and MultiPolygon).
+        var rings = [];
+        if (geom.type === 'Polygon') rings = geom.coordinates;
+        else if (geom.type === 'MultiPolygon') {
+          geom.coordinates.forEach(function (poly) { rings = rings.concat(poly); });
+        }
+        var best = null;
+        rings.forEach(function (ring) { if (!best || ring.length > best.length) best = ring; });
+        if (!best) throw new Error('no ring');
+        // GeoJSON coords are [lng, lat]; project to SVG space.
+        var d = '';
+        for (var j = 0; j < best.length; j++) {
+          var p = project(best[j][1], best[j][0]);
+          d += (j === 0 ? 'M' : 'L') + p.x.toFixed(1) + ' ' + p.y.toFixed(1) + ' ';
+        }
+        d += 'Z';
+        return d;
+      });
+  }
+
+  // ---------- OSRM routing ----------
+  function fetchOptimalRoute(pA, pB) {
+    var url = 'https://router.project-osrm.org/route/v1/driving/' +
+      pA.lng + ',' + pA.lat + ';' + pB.lng + ',' + pB.lat +
+      '?overview=full&geometries=geojson';
+    return fetch(url)
+      .then(function (r) { if (!r.ok) throw new Error('osrm route failed'); return r.json(); })
+      .then(function (data) {
+        if (!data.routes || !data.routes.length) throw new Error('no route');
+        var coords = data.routes[0].geometry.coordinates; // [lng, lat]
+        var simplified = rdpSimplify(coords, 0.001);
+        // Store as [lat, lng] to match puzzle.optimalRoute format.
+        return simplified.map(function (c) { return [c[1], c[0]]; });
+      });
+  }
 
   // ---------- DOM refs ----------
   var svg = document.getElementById('map-svg');
@@ -41,6 +130,7 @@
   var submitted = false;
   var ptA = null, ptB = null; // projected
   var PROX = 30; // px proximity threshold
+  var snappedRoute = null;    // road-snapped player route ({x,y}), if map-matching succeeded
 
   // ---------- SVG helpers ----------
   function el(name, attrs) {
@@ -63,8 +153,13 @@
 
   function drawMapBase() {
     svg.innerHTML = '';
-    var pts = VT_POLY.map(function (c) { return project(c[0], c[1]); });
-    var d = jitterPath(pts, 2.2) + 'Z';
+    var d;
+    if (vermontPath) {
+      d = vermontPath;
+    } else {
+      var pts = VT_POLY.map(function (c) { return project(c[0], c[1]); });
+      d = jitterPath(pts, 2.2) + 'Z';
+    }
     svg.appendChild(el('path', { d: d, class: 'vt-outline' }));
   }
 
@@ -244,18 +339,19 @@
     return puzzle.optimalRoute.map(function (c) { return project(c[0], c[1]); });
   }
 
-  function computeScore() {
+  // scoreRoute: array of {x,y} — either the snapped route or the raw drawn path.
+  function computeScore(scoreRoute) {
     var optimal = optimalProjected();
 
     // 1. Route similarity (0-50)
     var sum = 0;
-    for (var i = 0; i < optimal.length; i++) sum += distToPath(optimal[i], drawnPath);
+    for (var i = 0; i < optimal.length; i++) sum += distToPath(optimal[i], scoreRoute);
     var avg = sum / optimal.length;
     var simScore = Math.max(0, 50 * (1 - avg / 100));
 
     // 2. Efficiency (0-30)
     var optLen = pathLength(optimal);
-    var drawnLen = pathLength(drawnPath) || 1;
+    var drawnLen = pathLength(scoreRoute) || 1;
     var ratio = Math.min(1, optLen / drawnLen);
     var effScore = ratio * 30;
 
@@ -264,8 +360,8 @@
     var axisLen = Math.hypot(axis.x, axis.y) || 1;
     var ux = axis.x / axisLen, uy = axis.y / axisLen;
     var prevProj = null, backtrack = 0, forward = 0;
-    for (var j = 0; j < drawnPath.length; j++) {
-      var proj = (drawnPath[j].x - ptA.x) * ux + (drawnPath[j].y - ptA.y) * uy;
+    for (var j = 0; j < scoreRoute.length; j++) {
+      var proj = (scoreRoute[j].x - ptA.x) * ux + (scoreRoute[j].y - ptA.y) * uy;
       if (prevProj !== null) {
         var delta = proj - prevProj;
         if (delta < 0) backtrack += -delta; else forward += delta;
@@ -287,6 +383,36 @@
     return { score: finalScore, ratio: drawnLen / optLen, optimal: optimal };
   }
 
+  // ---------- OSRM map-matching ----------
+  // Evenly subsample a path of {x,y} to at most n points.
+  function subsample(path, n) {
+    if (path.length <= n) return path.slice();
+    var out = [];
+    for (var i = 0; i < n; i++) {
+      var idx = Math.round(i * (path.length - 1) / (n - 1));
+      out.push(path[idx]);
+    }
+    return out;
+  }
+
+  // Returns a Promise resolving to snapped route as array of {x,y}, or rejecting.
+  function matchDrawnPath(path) {
+    var sampled = subsample(path, 100);
+    var latlngs = sampled.map(function (p) { return unproject(p.x, p.y); });
+    var coordStr = latlngs.map(function (c) { return c.lng + ',' + c.lat; }).join(';');
+    var radiusStr = latlngs.map(function () { return '25'; }).join(';');
+    var url = 'https://router.project-osrm.org/match/v1/driving/' + coordStr +
+      '?overview=full&geometries=geojson&radiuses=' + radiusStr;
+    return fetch(url)
+      .then(function (r) { if (!r.ok) throw new Error('match http ' + r.status); return r.json(); })
+      .then(function (data) {
+        if (!data.matchings || !data.matchings.length) throw new Error('no matching');
+        var coords = data.matchings[0].geometry.coordinates; // [lng, lat]
+        if (!coords || !coords.length) throw new Error('empty matching');
+        return coords.map(function (c) { return project(c[1], c[0]); });
+      });
+  }
+
   // ---------- Submit / results ----------
   function submit() {
     if (submitted) return;
@@ -302,10 +428,26 @@
       return;
     }
     submitted = true;
-    msgEl.textContent = '';
-    var result = computeScore();
     disableControls();
+    msgEl.textContent = 'Calculating…';
+
+    matchDrawnPath(drawnPath).then(function (snapped) {
+      msgEl.textContent = '';
+      finishScoring(snapped, false);
+    }).catch(function () {
+      msgEl.textContent = 'scored without road snapping';
+      finishScoring(null, true);
+    });
+  }
+
+  // snapped: array of {x,y} or null (fall back to raw drawn path).
+  function finishScoring(snapped, fellBack) {
+    var scoreRoute = snapped || drawnPath;
+    var result = computeScore(scoreRoute);
+    result.fellBack = fellBack;
     redrawCanvas(); // redraw player path muted
+    if (snapped) drawInkPath(snapped, 'rgba(74,111,165,0.7)', 3); // slate blue snapped route
+    snappedRoute = snapped;
     animateOptimal(result.optimal, function () {
       showResults(result);
     });
@@ -358,6 +500,7 @@
     frame = function (ts) {
       ctx.clearRect(0, 0, SVG_W, SVG_H);
       drawInkPath(drawnPath, 'rgba(58,50,38,0.45)', 3);
+      if (snappedRoute) drawInkPath(snappedRoute, 'rgba(74,111,165,0.7)', 3);
       origFrame(ts);
     };
     requestAnimationFrame(frame);
@@ -460,6 +603,18 @@
     rebuildOverlays();
     redrawCanvas();
     bindEvents();
+
+    // Fetch real geography in parallel; each falls back independently on failure.
+    var vtFetch = buildVermontPath().then(function (d) {
+      vermontPath = d;
+      rebuildOverlays();
+    }).catch(function () { /* keep fallback VT_POLY */ });
+
+    var routeFetch = fetchOptimalRoute(puzzle.pointA, puzzle.pointB).then(function (route) {
+      if (route && route.length >= 2) puzzle.optimalRoute = route;
+    }).catch(function () { /* keep fallback optimalRoute */ });
+
+    Promise.all([vtFetch, routeFetch]);
   }
 
   function bindEvents() {
