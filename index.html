@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>There From Here</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --forest: #2d5016;
+      --slate: #6b7280;
+      --barn: #8b2020;
+      --cream: #f5f0e8;
+      --mud: #8b6914;
+      --ink: #3a3226;
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body {
+      margin: 0; padding: 0;
+      font-family: 'Poppins', sans-serif;
+      color: var(--ink);
+      background-color: var(--cream);
+      background-image:
+        radial-gradient(circle at 20% 30%, rgba(139,105,20,0.04) 0, transparent 60%),
+        radial-gradient(circle at 80% 70%, rgba(45,80,22,0.04) 0, transparent 60%),
+        repeating-linear-gradient(0deg, rgba(0,0,0,0.012) 0, rgba(0,0,0,0.012) 1px, transparent 1px, transparent 4px),
+        repeating-linear-gradient(90deg, rgba(0,0,0,0.012) 0, rgba(0,0,0,0.012) 1px, transparent 1px, transparent 4px);
+    }
+    #game-container {
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 16px 14px 40px;
+    }
+    header { text-align: center; margin-bottom: 14px; }
+    header h1 {
+      font-weight: 700;
+      font-size: clamp(1.5rem, 7vw, 2.1rem);
+      color: var(--forest);
+      margin: 0 0 2px;
+      letter-spacing: -0.5px;
+    }
+    header h1 .eagle { font-size: 0.9em; }
+    header .sub {
+      font-size: 0.82rem;
+      color: var(--slate);
+      font-weight: 500;
+    }
+    #map-area {
+      position: relative;
+      width: 100%;
+      max-width: 360px;
+      margin: 0 auto;
+      aspect-ratio: 300 / 450;
+      background: var(--cream);
+      border-radius: 6px;
+      touch-action: none;
+    }
+    #map-svg, #draw-canvas {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+    }
+    #draw-canvas { cursor: crosshair; touch-action: none; }
+    .vt-outline {
+      fill: rgba(255,255,255,0.55);
+      stroke: var(--ink);
+      stroke-width: 2.2;
+      stroke-linejoin: round;
+      stroke-linecap: round;
+    }
+    .point-marker { fill: var(--barn); stroke: #fff; stroke-width: 1.5; }
+    .point-label {
+      font-family: 'Poppins', sans-serif;
+      font-size: 13px; font-weight: 700; fill: var(--ink);
+      paint-order: stroke; stroke: var(--cream); stroke-width: 3px;
+    }
+    .point-name {
+      font-family: 'Poppins', sans-serif;
+      font-size: 10px; font-weight: 600; fill: var(--forest);
+      paint-order: stroke; stroke: var(--cream); stroke-width: 3px;
+    }
+    .mtn-line { fill: none; stroke: var(--forest); stroke-width: 2.5; stroke-dasharray: 2 5; stroke-linecap: round; opacity: 0.7; }
+    .mtn-label { font-family: 'Poppins'; font-style: italic; font-size: 9px; fill: var(--forest); }
+    .interstate { fill: none; stroke: var(--mud); stroke-width: 3; opacity: 0.85; stroke-linejoin: round; }
+    .shield { fill: var(--mud); stroke: #fff; stroke-width: 1; }
+    .shield-label { font-family: 'Poppins'; font-size: 7px; font-weight: 700; fill: #fff; text-anchor: middle; }
+
+    #controls { margin-top: 16px; }
+    .hint-row { display: flex; gap: 8px; justify-content: center; margin-bottom: 12px; flex-wrap: wrap; }
+    .action-row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+    button {
+      font-family: 'Poppins', sans-serif;
+      font-weight: 600;
+      font-size: 0.85rem;
+      padding: 10px 14px;
+      border: 2px solid var(--ink);
+      border-radius: 10px;
+      background: #fff;
+      color: var(--ink);
+      cursor: pointer;
+      transition: transform 0.08s, background 0.15s;
+      box-shadow: 2px 2px 0 rgba(58,50,38,0.18);
+    }
+    button:active { transform: translate(1px,1px); box-shadow: 1px 1px 0 rgba(58,50,38,0.18); }
+    button:disabled { opacity: 0.45; cursor: default; box-shadow: none; }
+    .hint-btn { font-size: 0.75rem; padding: 8px 10px; background: var(--cream); }
+    .hint-btn.used { background: var(--mud); color: #fff; border-color: var(--mud); }
+    #submit-btn { background: var(--forest); color: #fff; border-color: var(--forest); }
+    #clear-btn { background: var(--barn); color: #fff; border-color: var(--barn); }
+    .max-note { text-align: center; font-size: 0.72rem; color: var(--slate); margin-top: 6px; min-height: 1em; }
+    #msg { text-align: center; color: var(--barn); font-weight: 600; font-size: 0.82rem; min-height: 1.1em; margin-top: 8px; }
+
+    #results {
+      margin-top: 20px;
+      text-align: center;
+      padding: 18px 16px;
+      border: 2px solid var(--ink);
+      border-radius: 14px;
+      background: rgba(255,255,255,0.65);
+      box-shadow: 3px 3px 0 rgba(58,50,38,0.15);
+    }
+    #score-num { font-size: 3rem; font-weight: 700; color: var(--forest); line-height: 1; }
+    #score-num span { font-size: 1.2rem; color: var(--slate); }
+    #band { font-weight: 700; font-size: 1.05rem; margin: 8px 0 4px; color: var(--barn); }
+    .stats { font-size: 0.85rem; color: var(--ink); margin: 10px 0; line-height: 1.6; }
+    #share-btn { background: var(--forest); color: #fff; border-color: var(--forest); margin-top: 6px; }
+    #countdown { margin-top: 14px; font-size: 0.8rem; color: var(--slate); }
+    #countdown b { color: var(--ink); font-variant-numeric: tabular-nums; }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <header>
+      <h1>There From Here <span class="eagle">🦅</span></h1>
+      <div class="sub" id="puzzle-meta">Loading today's puzzle&hellip;</div>
+    </header>
+
+    <div id="map-area">
+      <svg id="map-svg" viewBox="0 0 300 450" preserveAspectRatio="xMidYMid meet"></svg>
+      <canvas id="draw-canvas" width="300" height="450"></canvas>
+    </div>
+
+    <div id="controls">
+      <div class="hint-row">
+        <button class="hint-btn" id="hint1" data-hint="1">Hint 1: Names</button>
+        <button class="hint-btn" id="hint2" data-hint="2">Hint 2: Mountains</button>
+        <button class="hint-btn" id="hint3" data-hint="3">Hint 3: Interstates</button>
+      </div>
+      <div class="action-row">
+        <button id="undo-btn">Undo Point</button>
+        <button id="clear-btn">Start Over</button>
+        <button id="submit-btn">Submit Route</button>
+      </div>
+      <div class="max-note" id="max-note">Max score: 100</div>
+      <div id="msg"></div>
+    </div>
+
+    <div id="results" class="hidden">
+      <div id="score-num">0<span>/100</span></div>
+      <div id="band"></div>
+      <div class="stats" id="stats"></div>
+      <button id="share-btn">Share Result</button>
+      <div id="countdown">Next puzzle in <b id="countdown-time">--:--:--</b></div>
+    </div>
+  </div>
+  <script>
+  /* Embedded copy of puzzles.json so the game also works under file:// where fetch is blocked.
+     Keep in sync with puzzles.json. */
+  window.PUZZLES_FALLBACK = {
+    "puzzles": [
+      { "id": 1, "date": "2026-06-07",
+        "pointA": { "name": "St. Johnsbury", "lat": 44.4198, "lng": -72.0146 },
+        "pointB": { "name": "Middlebury", "lat": 44.0154, "lng": -73.1673 },
+        "optimalDistanceMiles": 85,
+        "optimalRoute": [[44.420,-72.015],[44.418,-72.240],[44.260,-72.575],[44.200,-72.650],[44.160,-72.730],[44.100,-72.850],[44.050,-72.950],[44.020,-73.050],[44.015,-73.167]] },
+      { "id": 2, "date": "2026-06-08",
+        "pointA": { "name": "Brattleboro", "lat": 42.8509, "lng": -72.5579 },
+        "pointB": { "name": "Burlington", "lat": 44.4759, "lng": -73.2121 },
+        "optimalDistanceMiles": 115,
+        "optimalRoute": [[42.851,-72.558],[43.100,-72.500],[43.400,-72.450],[43.648,-72.327],[43.900,-72.450],[44.100,-72.570],[44.260,-72.575],[44.350,-72.780],[44.420,-73.000],[44.476,-73.212]] },
+      { "id": 3, "date": "2026-06-09",
+        "pointA": { "name": "Newport", "lat": 44.9367, "lng": -72.2073 },
+        "pointB": { "name": "Bennington", "lat": 42.8779, "lng": -73.1968 },
+        "optimalDistanceMiles": 165,
+        "optimalRoute": [[44.937,-72.207],[44.700,-72.200],[44.200,-72.400],[43.648,-72.327],[43.200,-72.500],[42.900,-72.650],[42.878,-73.197]] }
+    ]
+  };
+  </script>
+  <script src="game.js"></script>
+</body>
+</html>
