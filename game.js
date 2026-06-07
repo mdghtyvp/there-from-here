@@ -318,8 +318,10 @@
 
   function init(data) {
     var puzzles = data.puzzles;
-    puzzleIndex = dayOfYearET() % puzzles.length;
-    puzzle = puzzles[puzzleIndex];
+var override = parseInt(new URLSearchParams(window.location.search).get('puzzle'));
+puzzleIndex = (!isNaN(override) && override >= 1 && override <= puzzles.length)
+  ? override - 1
+  : dayOfYearET() % puzzles.length;    puzzle = puzzles[puzzleIndex];
     var et = etDate(new Date());
     puzzleMeta.textContent = 'Puzzle #' + puzzle.id + ' • ' + et.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
     rebuildOverlays(); redrawCanvas(); bindEvents();
