@@ -122,14 +122,13 @@
   // ---------- State ----------
   var puzzle = null;
   var puzzleIndex = 0;
-  var drawnPath = [];      // {x,y} in SVG/canvas coordinate space (0..300, 0..450)
-  var strokes = [];        // history of points appended per pointer-down for undo grouping (we undo last point)
+  var drawnPath = [];
   var drawing = false;
   var hintsUsed = 0;
   var maxScore = 100;
   var submitted = false;
-  var ptA = null, ptB = null; // projected
-  var PROX = 30; // px proximity threshold
+  var ptA = null, ptB = null;
+  var PROX = 30;
 
   // ---------- SVG helpers ----------
   function el(name, attrs) {
@@ -138,7 +137,6 @@
     return e;
   }
 
-  // Add slight jitter to a polyline for hand-drawn aesthetic.
   function jitterPath(points, amt) {
     var d = '';
     for (var i = 0; i < points.length; i++) {
@@ -239,13 +237,11 @@
     ctx.beginPath();
     ctx.moveTo(path[0].x, path[0].y);
     for (var i = 1; i < path.length; i++) {
-      // tiny jitter for hand-drawn feel
       var jx = (Math.sin(i * 0.7) * 0.6);
       var jy = (Math.cos(i * 0.9) * 0.6);
       ctx.lineTo(path[i].x + jx, path[i].y + jy);
     }
     ctx.stroke();
-    // markers at ends
     ctx.fillStyle = color;
   }
 
@@ -262,7 +258,6 @@
     e.preventDefault();
     var c = getPoint(e);
     var last = drawnPath[drawnPath.length - 1];
-    // sample: only add if moved enough
     if (!last || Math.hypot(c.x - last.x, c.y - last.y) > 2) {
       drawnPath.push(c);
       redrawCanvas();
@@ -281,7 +276,6 @@
   // ---------- Controls ----------
   function undo() {
     if (submitted) return;
-    // remove a chunk of the tail so undo feels meaningful
     var remove = Math.max(1, Math.round(drawnPath.length * 0.1));
     drawnPath.splice(drawnPath.length - remove, remove);
     redrawCanvas();
@@ -315,7 +309,6 @@
     return len;
   }
 
-  // min distance from point p to polyline path
   function distToPath(p, path) {
     var min = Infinity;
     for (var i = 1; i < path.length; i++) {
@@ -338,29 +331,35 @@
     return puzzle.optimalRoute.map(function (c) { return project(c[0], c[1]); });
   }
 
+  function evenSample(path, n) {
+    if (path.length <= n) return path;
+    var out = [];
+    for (var i = 0; i < n; i++) {
+      out.push(path[Math.round(i * (path.length - 1) / (n - 1))]);
+    }
+    return out;
+  }
+
   function computeScore(scoreRoute) {
     var optimal = optimalProjected();
 
-    // Bidirectional Hausdorff-style similarity: average min-distance from each
-    // optimal point to the drawn route, and vice versa, then take the worse half.
-    // This penalises both straying off-route AND missing large sections.
+    // Cap both routes at 200 points for performance.
+    var optSampled = evenSample(optimal, 200);
+    var drawnSampled = evenSample(scoreRoute, 200);
+
     var sumOpt = 0;
-    for (var i = 0; i < optimal.length; i++) sumOpt += distToPath(optimal[i], scoreRoute);
-    var avgOpt = sumOpt / optimal.length;
+    for (var i = 0; i < optSampled.length; i++) sumOpt += distToPath(optSampled[i], drawnSampled);
+    var avgOpt = sumOpt / optSampled.length;
 
     var sumDrawn = 0;
-    for (var j = 0; j < scoreRoute.length; j++) sumDrawn += distToPath(scoreRoute[j], optimal);
-    var avgDrawn = sumDrawn / scoreRoute.length;
+    for (var j = 0; j < drawnSampled.length; j++) sumDrawn += distToPath(drawnSampled[j], optSampled);
+    var avgDrawn = sumDrawn / drawnSampled.length;
 
-    // Use the larger of the two averages so wild scribbles are penalised hard.
     var avgDist = Math.max(avgOpt, avgDrawn);
 
-     // Normalize decay to optimal route length so scoring sensitivity is consistent
-    // across short and long routes. decay = 12% of optimal length means "pretty close"
-    // feels the same whether the route spans 50px or 400px.
-    var decay = Math.max(20, pathLength(optimal) * 0.12);
+    var decay = Math.max(20, pathLength(optSampled) * 0.12);
+    var raw = 100 * Math.exp(-avgDist / decay);
 
-    // hint penalty
     raw = raw * (maxScore / 100);
 
     var finalScore = Math.round(raw);
@@ -407,7 +406,6 @@
       if (start === null) start = ts;
       var t = Math.min(1, (ts - start) / DURATION);
       var target = totalLen * t;
-      // draw partial optimal
       ctx.lineJoin = 'round'; ctx.lineCap = 'round';
       ctx.strokeStyle = '#8b2020';
       ctx.lineWidth = 3.5;
@@ -508,7 +506,6 @@
   }
   function pad(n) { return (n < 10 ? '0' : '') + n; }
 
-  // Returns a Date object whose local fields represent ET wall-clock time.
   function etDate(d) {
     var s = d.toLocaleString('en-US', { timeZone: 'America/New_York' });
     return new Date(s);
@@ -538,15 +535,14 @@
     redrawCanvas();
     bindEvents();
 
-    // Fetch real geography in parallel; each falls back independently on failure.
     var vtFetch = buildVermontPath().then(function (d) {
       vermontPath = d;
       rebuildOverlays();
-    }).catch(function () { /* keep fallback VT_POLY */ });
+    }).catch(function () {});
 
     var routeFetch = fetchOptimalRoute(puzzle.pointA, puzzle.pointB).then(function (route) {
       if (route && route.length >= 2) puzzle.optimalRoute = route;
-    }).catch(function () { /* keep fallback optimalRoute */ });
+    }).catch(function () {});
 
     Promise.all([vtFetch, routeFetch]);
   }
@@ -574,7 +570,6 @@
       })
       .then(init)
       .catch(function () {
-        // file:// fallback — fetch is blocked under file://, use embedded copy.
         if (window.PUZZLES_FALLBACK) init(window.PUZZLES_FALLBACK);
         else puzzleMeta.textContent = 'Could not load puzzles.json.';
       });
