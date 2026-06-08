@@ -130,7 +130,6 @@
   var submitted = false;
   var ptA = null, ptB = null; // projected
   var PROX = 30; // px proximity threshold
-  var snappedRoute = null;    // road-snapped player route ({x,y}), if map-matching succeeded
 
   // ---------- SVG helpers ----------
   function el(name, attrs) {
@@ -339,78 +338,36 @@
     return puzzle.optimalRoute.map(function (c) { return project(c[0], c[1]); });
   }
 
-  // scoreRoute: array of {x,y} — either the snapped route or the raw drawn path.
   function computeScore(scoreRoute) {
     var optimal = optimalProjected();
 
-    // 1. Route similarity (0-50)
-    var sum = 0;
-    for (var i = 0; i < optimal.length; i++) sum += distToPath(optimal[i], scoreRoute);
-    var avg = sum / optimal.length;
-    var simScore = Math.max(0, 50 * (1 - avg / 100));
+    // Bidirectional Hausdorff-style similarity: average min-distance from each
+    // optimal point to the drawn route, and vice versa, then take the worse half.
+    // This penalises both straying off-route AND missing large sections.
+    var sumOpt = 0;
+    for (var i = 0; i < optimal.length; i++) sumOpt += distToPath(optimal[i], scoreRoute);
+    var avgOpt = sumOpt / optimal.length;
 
-    // 2. Efficiency (0-30)
-    var optLen = pathLength(optimal);
-    var drawnLen = pathLength(scoreRoute) || 1;
-    var ratio = Math.min(1, optLen / drawnLen);
-    var effScore = ratio * 30;
+    var sumDrawn = 0;
+    for (var j = 0; j < scoreRoute.length; j++) sumDrawn += distToPath(scoreRoute[j], optimal);
+    var avgDrawn = sumDrawn / scoreRoute.length;
 
-    // 3. Directionality (0-20)
-    var axis = { x: ptB.x - ptA.x, y: ptB.y - ptA.y };
-    var axisLen = Math.hypot(axis.x, axis.y) || 1;
-    var ux = axis.x / axisLen, uy = axis.y / axisLen;
-    var prevProj = null, backtrack = 0, forward = 0;
-    for (var j = 0; j < scoreRoute.length; j++) {
-      var proj = (scoreRoute[j].x - ptA.x) * ux + (scoreRoute[j].y - ptA.y) * uy;
-      if (prevProj !== null) {
-        var delta = proj - prevProj;
-        if (delta < 0) backtrack += -delta; else forward += delta;
-      }
-      prevProj = proj;
-    }
-    var total = forward + backtrack || 1;
-    var monotonicity = forward / total; // 1 = perfectly forward
-    var dirScore = 20 * Math.max(0, (monotonicity - 0.5) / 0.5);
+    // Use the larger of the two averages so wild scribbles are penalised hard.
+    var avgDist = Math.max(avgOpt, avgDrawn);
 
-    var raw = simScore + effScore + dirScore;
+    // SVG space is 300×450; a straight diagonal is ~540px. Calibrate so that
+    // a typical bad route (avg ~80px off) scores ~30, and on-route (~10px) scores ~90.
+    // sigmoid-like mapping: score = 100 * exp(-avgDist / decay)
+    var decay = 35;
+    var raw = 100 * Math.exp(-avgDist / decay);
 
-    // 5. hint penalty
+    // hint penalty
     raw = raw * (maxScore / 100);
 
     var finalScore = Math.round(raw);
     finalScore = Math.max(1, Math.min(100, finalScore));
 
-    return { score: finalScore, ratio: drawnLen / optLen, optimal: optimal };
-  }
-
-  // ---------- OSRM map-matching ----------
-  // Evenly subsample a path of {x,y} to at most n points.
-  function subsample(path, n) {
-    if (path.length <= n) return path.slice();
-    var out = [];
-    for (var i = 0; i < n; i++) {
-      var idx = Math.round(i * (path.length - 1) / (n - 1));
-      out.push(path[idx]);
-    }
-    return out;
-  }
-
-  // Returns a Promise resolving to snapped route as array of {x,y}, or rejecting.
-  function matchDrawnPath(path) {
-    var sampled = subsample(path, 100);
-    var latlngs = sampled.map(function (p) { return unproject(p.x, p.y); });
-    var coordStr = latlngs.map(function (c) { return c.lng + ',' + c.lat; }).join(';');
-    var radiusStr = latlngs.map(function () { return '25'; }).join(';');
-    var url = 'https://router.project-osrm.org/match/v1/driving/' + coordStr +
-      '?overview=full&geometries=geojson&radiuses=' + radiusStr;
-    return fetch(url)
-      .then(function (r) { if (!r.ok) throw new Error('match http ' + r.status); return r.json(); })
-      .then(function (data) {
-        if (!data.matchings || !data.matchings.length) throw new Error('no matching');
-        var coords = data.matchings[0].geometry.coordinates; // [lng, lat]
-        if (!coords || !coords.length) throw new Error('empty matching');
-        return coords.map(function (c) { return project(c[1], c[0]); });
-      });
+    return { score: finalScore, optimal: optimal };
   }
 
   // ---------- Submit / results ----------
@@ -429,25 +386,9 @@
     }
     submitted = true;
     disableControls();
-    msgEl.textContent = 'Calculating…';
-
-    matchDrawnPath(drawnPath).then(function (snapped) {
-      msgEl.textContent = '';
-      finishScoring(snapped, false);
-    }).catch(function () {
-      msgEl.textContent = ' ';
-      finishScoring(null, true);
-    });
-  }
-
-  // snapped: array of {x,y} or null (fall back to raw drawn path).
-  function finishScoring(snapped, fellBack) {
-    var scoreRoute = snapped || drawnPath;
-    var result = computeScore(scoreRoute);
-    result.fellBack = fellBack;
-    redrawCanvas(); // redraw player path muted
-    if (snapped) drawInkPath(snapped, 'rgba(74,111,165,0.7)', 3); // slate blue snapped route
-    snappedRoute = snapped;
+    msgEl.textContent = '';
+    var result = computeScore(drawnPath);
+    redrawCanvas();
     animateOptimal(result.optimal, function () {
       showResults(result);
     });
@@ -493,25 +434,21 @@
         done();
       }
     }
-    // keep player path visible underneath; clear and redraw each frame would flicker the optimal,
-    // so redraw player path once then progressively stroke optimal (additive strokes ok since we re-add).
-    // To avoid stacking faint optimal strokes, clear & redraw player each frame:
     var origFrame = frame;
     frame = function (ts) {
       ctx.clearRect(0, 0, SVG_W, SVG_H);
       drawInkPath(drawnPath, 'rgba(58,50,38,0.45)', 3);
-      if (snappedRoute) drawInkPath(snappedRoute, 'rgba(74,111,165,0.7)', 3);
       origFrame(ts);
     };
     requestAnimationFrame(frame);
   }
 
   var BANDS = [
-    { min: 90, label: 'Grade A — You know these roads like the back of your hand' },
-    { min: 75, label: "Local Knowledge — Solid. You've driven this state." },
-    { min: 60, label: 'Leaf Peeper — Not bad for a flatlander' },
-    { min: 40, label: "Lost on a Class 4 Road — The crow could've told you" },
-    { min: 1, label: "You Can't Get There From Here — Classic" }
+    { min: 90, label: 'Grade A – you got there' },
+    { min: 75, label: 'Nice job, bud' },
+    { min: 60, label: 'You took the scenic route' },
+    { min: 40, label: "You're lost, bud" },
+    { min: 1, label: "You didn't get there from here" }
   ];
   function bandFor(score) {
     for (var i = 0; i < BANDS.length; i++) if (score >= BANDS[i].min) return BANDS[i].label;
@@ -526,7 +463,6 @@
     document.getElementById('band').textContent = band;
     document.getElementById('stats').innerHTML =
       'Hints used: ' + hintsUsed + '/3<br>' +
-      'Route length: ' + result.ratio.toFixed(2) + '× optimal<br>' +
       '📍 ' + puzzle.pointA.name + ' → ' + puzzle.pointB.name;
 
     document.getElementById('share-btn').onclick = function () {
@@ -558,7 +494,6 @@
     var elTime = document.getElementById('countdown-time');
     function tick() {
       var now = new Date();
-      // ET = UTC-5 (standard) / UTC-4 (DST). Use a simple approach: compute next midnight in ET.
       var etNow = etDate(now);
       var nextMidnight = new Date(etNow.getTime());
       nextMidnight.setHours(24, 0, 0, 0);
