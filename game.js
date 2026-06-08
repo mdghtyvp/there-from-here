@@ -463,9 +463,9 @@
       '📍 ' + puzzle.pointA.name + ' → ' + puzzle.pointB.name;
 
     document.getElementById('share-btn').onclick = function () {
-      var text = 'There From Here 🦅 #' + puzzle.id + '\n' +
-        'Score: ' + result.score + '/100 — "' + band + '"\n' +
+      var text = 'There From Here #' + puzzle.id + '\n' +
         '📍 ' + puzzle.pointA.name + ' → ' + puzzle.pointB.name + '\n' +
+        'Score: ' + result.score + '/100 — "' + band + '"\n' +
         'Hints used: ' + hintsUsed + '/3';
       copyToClipboard(text, this);
     };
