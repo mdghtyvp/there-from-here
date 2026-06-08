@@ -357,8 +357,8 @@
 
     var avgDist = Math.max(avgOpt, avgDrawn);
 
-   var decay = Math.max(20, pathLength(optSampled) * 0.20);
-    var raw = 100 * Math.exp(-Math.pow(avgDist / decay, 1.5));
+    var decay = Math.max(20, pathLength(optSampled) * 0.12);
+    var raw = 100 * Math.exp(-avgDist / decay);
 
     raw = raw * (maxScore / 100);
 
