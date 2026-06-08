@@ -54,9 +54,8 @@ $ cat /home/user/there-from-here/puzzles.json
         [42.900, -72.650],
         [42.878, -73.197]
       ]
-    }
-  ]
-}
+    },
+ 
 
     
     {
@@ -114,3 +113,4 @@ $ cat /home/user/there-from-here/puzzles.json
     }
   ]
 }
+ 
