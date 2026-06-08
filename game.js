@@ -355,10 +355,10 @@
     // Use the larger of the two averages so wild scribbles are penalised hard.
     var avgDist = Math.max(avgOpt, avgDrawn);
 
-    // SVG space is 300×450; a straight diagonal is ~540px. Calibrate so that
-    // a typical bad route (avg ~80px off) scores ~30, and on-route (~10px) scores ~90.
-    // sigmoid-like mapping: score = 100 * exp(-avgDist / decay)
-    var decay = 35;
+    // Normalize decay to optimal route length so scoring sensitivity is consistent
+    // across short and long routes. decay = 12% of optimal length means "pretty close"
+    // feels the same whether the route spans 50px or 400px.
+    var decay = Math.max(20, pathLength(optimal) * 0.12);
     var raw = 100 * Math.exp(-avgDist / decay);
 
     // hint penalty
