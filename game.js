@@ -341,33 +341,39 @@
   function computeScore(scoreRoute) {
     var optimal = optimalProjected();
 
-    // Bidirectional Hausdorff-style similarity: average min-distance from each
-    // optimal point to the drawn route, and vice versa, then take the worse half.
-    // This penalises both straying off-route AND missing large sections.
+    // Cap both routes at 200 points for performance — O(n²) otherwise kills the main thread
+    // when OSRM returns a dense route.
+    var optSampled = evenSample(optimal, 200);
+    var drawnSampled = evenSample(scoreRoute, 200);
+
     var sumOpt = 0;
-    for (var i = 0; i < optimal.length; i++) sumOpt += distToPath(optimal[i], scoreRoute);
-    var avgOpt = sumOpt / optimal.length;
+    for (var i = 0; i < optSampled.length; i++) sumOpt += distToPath(optSampled[i], drawnSampled);
+    var avgOpt = sumOpt / optSampled.length;
 
     var sumDrawn = 0;
-    for (var j = 0; j < scoreRoute.length; j++) sumDrawn += distToPath(scoreRoute[j], optimal);
-    var avgDrawn = sumDrawn / scoreRoute.length;
+    for (var j = 0; j < drawnSampled.length; j++) sumDrawn += distToPath(drawnSampled[j], optSampled);
+    var avgDrawn = sumDrawn / drawnSampled.length;
 
-    // Use the larger of the two averages so wild scribbles are penalised hard.
     var avgDist = Math.max(avgOpt, avgDrawn);
 
-    // Normalize decay to optimal route length so scoring sensitivity is consistent
-    // across short and long routes. decay = 12% of optimal length means "pretty close"
-    // feels the same whether the route spans 50px or 400px.
-    var decay = Math.max(20, pathLength(optimal) * 0.12);
+    var decay = Math.max(20, pathLength(optSampled) * 0.12);
     var raw = 100 * Math.exp(-avgDist / decay);
 
-    // hint penalty
     raw = raw * (maxScore / 100);
 
     var finalScore = Math.round(raw);
     finalScore = Math.max(1, Math.min(100, finalScore));
 
     return { score: finalScore, optimal: optimal };
+  }
+
+  function evenSample(path, n) {
+    if (path.length <= n) return path;
+    var out = [];
+    for (var i = 0; i < n; i++) {
+      out.push(path[Math.round(i * (path.length - 1) / (n - 1))]);
+    }
+    return out;
   }
 
   // ---------- Submit / results ----------
