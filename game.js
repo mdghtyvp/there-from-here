@@ -442,7 +442,7 @@
 
   var BANDS = [
     { min: 90, label: 'Grade A – you got there' },
-    { min: 75, label: 'Nice job, bud' },
+    { min: 75, label: 'Nice job, neighbor' },
     { min: 60, label: 'You took the scenic route' },
     { min: 40, label: "You're lost, bud" },
     { min: 1, label: "You didn't get there from here" }
