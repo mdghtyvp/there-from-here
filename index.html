@@ -210,6 +210,8 @@
       box-shadow: 4px 4px 0 rgba(58,50,38,0.12);
       text-align: center;
       position: relative;
+      overflow-y: auto;
+      max-height: calc(100dvh - 40px);
     }
     .splash-close {
       position: absolute;
@@ -278,6 +280,57 @@
     #countdown { margin-top: 12px; font-size: 0.78rem; color: var(--slate); }
     #countdown b { color: var(--ink); font-variant-numeric: tabular-nums; }
 
+    /* Email signup in results splash */
+    .signup-divider {
+      border: none;
+      border-top: 1px solid rgba(58,50,38,0.12);
+      margin: 16px 0 14px;
+    }
+    .signup-copy {
+      font-size: 0.78rem;
+      color: var(--ink);
+      line-height: 1.45;
+      margin: 0 0 10px;
+    }
+    .signup-row {
+      display: flex;
+      gap: 6px;
+    }
+    #signup-email {
+      flex: 1;
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.8rem;
+      padding: 8px 10px;
+      border: 2px solid var(--ink);
+      border-radius: 8px;
+      outline: none;
+      color: var(--ink);
+      min-width: 0;
+    }
+    #signup-email:focus { border-color: var(--forest); }
+    #signup-submit {
+      font-family: 'Poppins', sans-serif;
+      font-weight: 700;
+      font-size: 0.8rem;
+      padding: 8px 14px;
+      border: 2px solid var(--forest);
+      border-radius: 8px;
+      background: var(--forest);
+      color: #fff;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: transform 0.08s;
+    }
+    #signup-submit:active { transform: translate(1px,1px); }
+    #signup-submit:disabled { opacity: 0.5; cursor: default; }
+    #signup-msg {
+      font-size: 0.74rem;
+      margin-top: 7px;
+      min-height: 1em;
+      color: var(--forest);
+    }
+    #signup-msg.error { color: var(--barn); }
+
     .hidden { display: none !important; }
   </style>
 </head>
@@ -334,8 +387,8 @@
     <div class="splash-card">
       <h1>There From Here</h1>
       <div class="splash-meta" id="splash-puzzle-meta">Loading&hellip;</div>
-      <div class="splash-desc">Draw a driving route from point A to point B. The closer your line follows the best path, the higher your score.</div>
-      <button id="play-btn">Hit the Road</button>
+      <div class="splash-desc">Draw the driving route between two points on the Vermont map. The closer your line follows the real road, the higher your score.</div>
+      <button id="play-btn">Play</button>
     </div>
   </div>
 
@@ -346,8 +399,15 @@
       <div id="score-num">0<span>/100</span></div>
       <div id="band"></div>
       <div class="stats" id="stats"></div>
-      <button id="share-btn">Share Your Score</button>
+      <button id="share-btn">Share Result</button>
       <div id="countdown">Next puzzle in <b id="countdown-time">--:--:--</b></div>
+      <hr class="signup-divider">
+      <p class="signup-copy">Get a new puzzle daily alongside our latest headlines in <strong>The Frequency</strong> newsletter.</p>
+      <div class="signup-row">
+        <input type="email" id="signup-email" placeholder="your@email.com" autocomplete="email">
+        <button id="signup-submit">Sign up</button>
+      </div>
+      <div id="signup-msg"></div>
     </div>
   </div>
 
