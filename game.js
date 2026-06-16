@@ -381,6 +381,28 @@
     requestAnimationFrame(frame);
   }
 
+  // ---------- Mailchimp signup ----------
+  function submitSignup(email, done) {
+    var cbName = 'mc_cb_' + Date.now();
+    var url = 'https://vermontpublic.us1.list-manage.com/subscribe/post-json' +
+      '?u=ab1a703905d19f426745609a0&id=15bea94d3a&f_id=004171e2f0' +
+      '&EMAIL=' + encodeURIComponent(email) +
+      '&c=' + cbName;
+    var script = document.createElement('script');
+    window[cbName] = function (data) {
+      delete window[cbName];
+      if (script.parentNode) script.parentNode.removeChild(script);
+      done(data);
+    };
+    script.onerror = function () {
+      delete window[cbName];
+      if (script.parentNode) script.parentNode.removeChild(script);
+      done({ result: 'error', msg: 'Could not connect. Please try again.' });
+    };
+    script.src = url;
+    document.head.appendChild(script);
+  }
+
   // ---------- Results splash ----------
   var BANDS = [
     { min: 90, label: 'Grade A – you got there' },
@@ -411,6 +433,43 @@
 
     document.getElementById('splash-results').classList.remove('hidden');
     startCountdown();
+
+    // Wire up email signup
+    var emailInput = document.getElementById('signup-email');
+    var submitBtn  = document.getElementById('signup-submit');
+    var msgEl2     = document.getElementById('signup-msg');
+    emailInput.value = '';
+    msgEl2.textContent = '';
+    msgEl2.className = '';
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Sign up';
+    submitBtn.onclick = function () {
+      var email = emailInput.value.trim();
+      if (!email || !email.includes('@')) {
+        msgEl2.textContent = 'Please enter a valid email.';
+        msgEl2.className = 'error';
+        return;
+      }
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Sending…';
+      submitSignup(email, function (data) {
+        if (data.result === 'success') {
+          msgEl2.textContent = 'You\'re in! Check your inbox to confirm.';
+          msgEl2.className = '';
+          submitBtn.textContent = '✓ Signed up';
+        } else {
+          var msg = data.msg || 'Something went wrong.';
+          // Strip Mailchimp's HTML error prefix like "0 - "
+          msg = msg.replace(/^\d+ - /, '');
+          // If already subscribed, be friendly
+          if (msg.toLowerCase().includes('already subscribed')) msg = 'You\'re already subscribed!';
+          msgEl2.textContent = msg;
+          msgEl2.className = 'error';
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Sign up';
+        }
+      });
+    };
   }
 
   function copyToClipboard(text, btn) {
