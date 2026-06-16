@@ -10,9 +10,16 @@ const fs = require('fs');
 
 const BOUNDS = { north: 45.017, south: 42.726, west: -73.438, east: -71.464 };
 
+// More detailed polygon along the NY/VT western border to avoid generating
+// points that are technically inside the rough bounding box but actually in NY.
 const VT_POLY = [
   [45.013, -73.343], [45.017, -72.103], [44.916, -71.503], [44.503, -71.573],
-  [43.572, -72.456], [42.726, -72.456], [42.726, -73.265], [43.150, -73.404],
+  [43.572, -72.456], [42.726, -72.456],
+  // Southern NY border — more detailed to prevent Bennington-area NY points
+  [42.726, -73.255], [42.760, -73.265], [42.850, -73.268], [42.950, -73.265],
+  [43.020, -73.255], [43.080, -73.245], [43.150, -73.165], [43.200, -73.095],
+  [43.300, -73.060],
+  // Lake Champlain western shore
   [43.570, -73.438], [44.020, -73.338], [44.500, -73.370], [45.013, -73.343]
 ];
 
@@ -54,7 +61,9 @@ async function snapToRoad(lat, lng) {
   const data = await res.json();
   if (!data.waypoints || !data.waypoints.length) throw new Error('No waypoints from OSRM nearest');
   const [snappedLng, snappedLat] = data.waypoints[0].location;
-  return { lat: parseFloat(snappedLat.toFixed(4)), lng: parseFloat(snappedLng.toFixed(4)) };
+  const pt = { lat: parseFloat(snappedLat.toFixed(4)), lng: parseFloat(snappedLng.toFixed(4)) };
+  if (!pointInPolygon(pt.lat, pt.lng, VT_POLY)) throw new Error('Snapped point outside VT');
+  return pt;
 }
 
 async function getTownName(lat, lng) {
@@ -67,13 +76,24 @@ async function getTownName(lat, lng) {
   return addr.village || addr.town || addr.city || addr.county || addr.state || 'Vermont';
 }
 
-async function getDrivingDistanceMiles(a, b) {
-  const url = `https://router.project-osrm.org/route/v1/driving/${a.lng},${a.lat};${b.lng},${b.lat}?overview=false`;
+async function getRoute(a, b, waypointCount = 10) {
+  const url = `https://router.project-osrm.org/route/v1/driving/${a.lng},${a.lat};${b.lng},${b.lat}?overview=full&geometries=geojson`;
   const res = await fetch(url, { headers: { 'User-Agent': 'there-from-here-puzzle-gen/1.0' } });
   if (!res.ok) throw new Error(`OSRM route ${res.status}`);
   const data = await res.json();
   if (!data.routes || !data.routes.length) throw new Error('No route from OSRM');
-  return Math.round(data.routes[0].distance / 1609.34);
+  const route = data.routes[0];
+  const coords = route.geometry.coordinates; // [[lng, lat], ...]
+  // Even-sample to waypointCount points, stored as [lat, lng]
+  const waypoints = [];
+  for (let i = 0; i < waypointCount; i++) {
+    const idx = Math.round(i * (coords.length - 1) / (waypointCount - 1));
+    waypoints.push([
+      parseFloat(coords[idx][1].toFixed(4)),
+      parseFloat(coords[idx][0].toFixed(4))
+    ]);
+  }
+  return { distanceMiles: Math.round(route.distance / 1609.34), waypoints };
 }
 
 async function generatePuzzle(id, dateStr) {
@@ -85,10 +105,10 @@ async function generatePuzzle(id, dateStr) {
       if (haversineMiles(rawA.lat, rawA.lng, rawB.lat, rawB.lng) < 25) continue;
 
       const [a, b] = await Promise.all([snapToRoad(rawA.lat, rawA.lng), snapToRoad(rawB.lat, rawB.lng)]);
-      await sleep(300); // be polite to OSRM
+      await sleep(300);
 
-      const drivingMiles = await getDrivingDistanceMiles(a, b);
-      if (drivingMiles < 30) continue;
+      const { distanceMiles, waypoints } = await getRoute(a, b);
+      if (distanceMiles < 30) continue;
 
       await sleep(300);
       const [nameA, nameB] = await Promise.all([getTownName(a.lat, a.lng), getTownName(b.lat, b.lng)]);
@@ -99,8 +119,8 @@ async function generatePuzzle(id, dateStr) {
         date: dateStr,
         pointA: { name: nameA, lat: a.lat, lng: a.lng },
         pointB: { name: nameB, lat: b.lat, lng: b.lng },
-        optimalDistanceMiles: drivingMiles,
-        optimalRoute: [[a.lat, a.lng], [b.lat, b.lng]]
+        optimalDistanceMiles: distanceMiles,
+        optimalRoute: waypoints
       };
     } catch (e) {
       console.error(`  attempt ${attempt + 1} failed: ${e.message}`);

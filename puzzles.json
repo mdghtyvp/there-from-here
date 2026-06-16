@@ -421,8 +421,8 @@
       },
       "pointB": {
         "name": "Pawlet",
-        "lat": 43.2871,
-        "lng": -73.3498
+        "lat": 43.3454,
+        "lng": -73.1834
       },
       "optimalDistanceMiles": 132,
       "optimalRoute": [
@@ -431,8 +431,8 @@
           -72.0405
         ],
         [
-          43.2871,
-          -73.3498
+          43.3454,
+          -73.1834
         ]
       ]
     },
@@ -491,8 +491,8 @@
       "date": "2026-06-25",
       "pointA": {
         "name": "Poultney",
-        "lat": 43.513,
-        "lng": -73.3347
+        "lat": 43.5212,
+        "lng": -73.2373
       },
       "pointB": {
         "name": "Peacham",
@@ -502,8 +502,8 @@
       "optimalDistanceMiles": 81,
       "optimalRoute": [
         [
-          43.513,
-          -73.3347
+          43.5212,
+          -73.2373
         ],
         [
           44.3073,
@@ -641,8 +641,8 @@
       "date": "2026-07-01",
       "pointA": {
         "name": "Manchester",
-        "lat": 43.1791,
-        "lng": -73.2848
+        "lat": 43.1637,
+        "lng": -73.0723
       },
       "pointB": {
         "name": "Fairlee",
@@ -652,8 +652,8 @@
       "optimalDistanceMiles": 76,
       "optimalRoute": [
         [
-          43.1791,
-          -73.2848
+          43.1637,
+          -73.0723
         ],
         [
           43.9131,
@@ -841,8 +841,8 @@
       "date": "2026-07-09",
       "pointA": {
         "name": "Bennington",
-        "lat": 42.9279,
-        "lng": -73.3301
+        "lat": 42.8779,
+        "lng": -73.1968
       },
       "pointB": {
         "name": "Williamstown",
@@ -852,8 +852,8 @@
       "optimalDistanceMiles": 94,
       "optimalRoute": [
         [
-          42.9279,
-          -73.3301
+          42.8779,
+          -73.1968
         ],
         [
           44.1366,
@@ -871,8 +871,8 @@
       },
       "pointB": {
         "name": "Bennington",
-        "lat": 42.9731,
-        "lng": -73.2989
+        "lat": 42.8779,
+        "lng": -73.1968
       },
       "optimalDistanceMiles": 111,
       "optimalRoute": [
@@ -881,8 +881,8 @@
           -73.2774
         ],
         [
-          42.9731,
-          -73.2989
+          42.8779,
+          -73.1968
         ]
       ]
     },
@@ -1046,8 +1046,8 @@
       },
       "pointB": {
         "name": "Manchester",
-        "lat": 43.1196,
-        "lng": -73.3472
+        "lat": 43.1637,
+        "lng": -73.0723
       },
       "optimalDistanceMiles": 72,
       "optimalRoute": [
@@ -1056,8 +1056,8 @@
           -72.5965
         ],
         [
-          43.1196,
-          -73.3472
+          43.1637,
+          -73.0723
         ]
       ]
     },
@@ -1091,8 +1091,8 @@
       "date": "2026-07-19",
       "pointA": {
         "name": "Fair Haven",
-        "lat": 43.6322,
-        "lng": -73.4161
+        "lat": 43.5987,
+        "lng": -73.2684
       },
       "pointB": {
         "name": "Townshend",
@@ -1102,8 +1102,8 @@
       "optimalDistanceMiles": 56,
       "optimalRoute": [
         [
-          43.6322,
-          -73.4161
+          43.5987,
+          -73.2684
         ],
         [
           42.9747,
@@ -1566,8 +1566,8 @@
       "date": "2026-08-07",
       "pointA": {
         "name": "Pawlet",
-        "lat": 43.3618,
-        "lng": -73.3511
+        "lat": 43.3454,
+        "lng": -73.1834
       },
       "pointB": {
         "name": "Ludlow",
@@ -1577,8 +1577,8 @@
       "optimalDistanceMiles": 34,
       "optimalRoute": [
         [
-          43.3618,
-          -73.3511
+          43.3454,
+          -73.1834
         ],
         [
           43.4492,
@@ -1671,8 +1671,8 @@
       },
       "pointB": {
         "name": "Manchester",
-        "lat": 43.1692,
-        "lng": -73.3534
+        "lat": 43.1637,
+        "lng": -73.0723
       },
       "optimalDistanceMiles": 35,
       "optimalRoute": [
@@ -1681,8 +1681,8 @@
           -72.7545
         ],
         [
-          43.1692,
-          -73.3534
+          43.1637,
+          -73.0723
         ]
       ]
     },
