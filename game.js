@@ -111,6 +111,7 @@
   var hintsUsed = 0;
   var maxScore = 100;
   var submitted = false;
+  maxNote.textContent = 'Max score: 100';
   var ptA = null, ptB = null;
   var PROX = 30;
 
