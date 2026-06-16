@@ -383,10 +383,10 @@
 
   // ---------- Results splash ----------
   var BANDS = [
-    { min: 90, label: 'Grade A – you got there' },
-    { min: 75, label: 'Nice job, bud' },
+    { min: 90, label: 'Grade A! You got there' },
+    { min: 75, label: 'Nice job, neighbor' },
     { min: 60, label: 'You took the scenic route' },
-    { min: 40, label: "You're lost, bud" },
+    { min: 30, label: "You're lost, bud" },
     { min: 1,  label: "You didn't get there from here" }
   ];
   function bandFor(score) {
@@ -403,7 +403,7 @@
       'Hints used: ' + hintsUsed + '/3';
 
     document.getElementById('share-btn').onclick = function () {
-      var text = 'There From Here #' + puzzle.id + '\n' +
+      var text = '📍 There From Here #' + puzzle.id + '\n' +
         result.score + '/100 — ' + band + '\n' +
         'Hints: ' + hintsUsed + '/3';
       copyToClipboard(text, this);
