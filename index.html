@@ -18,34 +18,58 @@
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     html, body {
       margin: 0; padding: 0;
+      height: 100%;
+      overflow: hidden;
       font-family: 'Poppins', sans-serif;
       color: var(--ink);
       background: #fff;
     }
+
+    /* ── Single-screen layout ── */
     #game-container {
-      max-width: 520px;
+      height: 100dvh;
+      max-width: 480px;
       margin: 0 auto;
-      padding: 16px 14px 40px;
+      padding: 8px 12px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
     }
-    header { text-align: center; margin-bottom: 14px; }
-    header h1 {
+
+    /* Slim top bar */
+    #top-bar {
+      flex-shrink: 0;
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      padding: 0 2px;
+    }
+    #top-bar h1 {
+      font-size: 1.15rem;
       font-weight: 700;
-      font-size: clamp(1.5rem, 7vw, 2.1rem);
       color: var(--forest);
-      margin: 0 0 2px;
-      letter-spacing: -0.5px;
+      margin: 0;
+      letter-spacing: -0.3px;
     }
-    header .sub {
-      font-size: 0.82rem;
+    #puzzle-meta {
+      font-size: 0.72rem;
       color: var(--slate);
       font-weight: 500;
     }
+
+    /* Map wrapper — takes all remaining vertical space */
+    #map-wrap {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
     #map-area {
+      aspect-ratio: 2 / 3;
+      height: 100%;
+      max-height: 100%;
       position: relative;
-      width: 100%;
-      max-width: 360px;
-      margin: 0 auto;
-      aspect-ratio: 300 / 450;
       background: #fff;
       border-radius: 6px;
       touch-action: none;
@@ -56,6 +80,8 @@
       width: 100%; height: 100%;
     }
     #draw-canvas { cursor: crosshair; touch-action: none; }
+
+    /* SVG map styles */
     .vt-outline {
       fill: rgba(245,240,232,0.6);
       stroke: var(--ink);
@@ -80,17 +106,14 @@
     .shield { fill: var(--mud); stroke: #fff; stroke-width: 1; }
     .shield-label { font-family: 'Poppins'; font-size: 7px; font-weight: 700; fill: #fff; text-anchor: middle; }
 
-    /* Submit button — prominent, directly under map */
-    #submit-wrap {
-      max-width: 360px;
-      margin: 12px auto 0;
-    }
+    /* Submit button */
+    #submit-wrap { flex-shrink: 0; }
     #submit-btn {
       width: 100%;
       font-family: 'Poppins', sans-serif;
       font-weight: 700;
-      font-size: 1rem;
-      padding: 14px;
+      font-size: 0.95rem;
+      padding: 11px;
       border: 2px solid var(--forest);
       border-radius: 10px;
       background: var(--forest);
@@ -102,45 +125,38 @@
     #submit-btn:active { transform: translate(1px,1px); box-shadow: 1px 1px 0 rgba(45,80,22,0.25); }
     #submit-btn:disabled { opacity: 0.4; cursor: default; box-shadow: none; }
 
-    /* Controls bar */
-    #controls { margin-top: 14px; max-width: 360px; margin-left: auto; margin-right: auto; }
+    /* Controls row */
+    #controls { flex-shrink: 0; }
     .controls-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 8px;
+      gap: 6px;
     }
-    /* Icon buttons */
     .icon-btn {
       background: none;
       border: none;
-      padding: 6px;
+      padding: 5px;
       cursor: pointer;
       color: var(--slate);
       display: flex;
       align-items: center;
-      gap: 5px;
+      gap: 4px;
       font-family: 'Poppins', sans-serif;
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       font-weight: 600;
       transition: color 0.15s;
       border-radius: 6px;
     }
     .icon-btn:hover { color: var(--ink); }
     .icon-btn:disabled { opacity: 0.35; cursor: default; }
-    .icon-btn svg { width: 20px; height: 20px; flex-shrink: 0; }
-
-    /* Hint controls */
-    .hint-controls {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
+    .icon-btn svg { width: 18px; height: 18px; flex-shrink: 0; }
+    .hint-controls { display: flex; align-items: center; gap: 8px; }
     #hint-btn {
       font-family: 'Poppins', sans-serif;
       font-weight: 600;
-      font-size: 0.8rem;
-      padding: 7px 14px;
+      font-size: 0.75rem;
+      padding: 6px 12px;
       border: 2px solid var(--ink);
       border-radius: 8px;
       background: #fff;
@@ -152,73 +168,131 @@
     }
     #hint-btn:active { transform: translate(1px,1px); }
     #hint-btn:disabled { opacity: 0.4; cursor: default; box-shadow: none; }
-    .hint-pips {
-      display: flex;
-      gap: 5px;
-      align-items: center;
-    }
+    .hint-pips { display: flex; gap: 4px; align-items: center; }
     .pip {
-      width: 16px; height: 16px;
+      width: 14px; height: 14px;
       border-radius: 50%;
       border: 2px solid var(--slate);
       display: flex; align-items: center; justify-content: center;
       transition: background 0.2s, border-color 0.2s;
       flex-shrink: 0;
     }
-    .pip.checked {
-      background: var(--mud);
-      border-color: var(--mud);
-    }
+    .pip.checked { background: var(--mud); border-color: var(--mud); }
     .pip.checked::after {
       content: '';
       display: block;
-      width: 4px; height: 7px;
+      width: 3px; height: 6px;
       border: 2px solid #fff;
       border-top: none; border-left: none;
       transform: rotate(45deg) translate(-1px, -1px);
     }
+    .max-note { font-size: 0.68rem; color: var(--slate); text-align: center; min-height: 1em; margin-top: 4px; }
+    #msg { text-align: center; color: var(--barn); font-weight: 600; font-size: 0.78rem; min-height: 1em; margin-top: 2px; }
 
-    .max-note { font-size: 0.72rem; color: var(--slate); margin-top: 8px; text-align: center; min-height: 1em; }
-    #msg { text-align: center; color: var(--barn); font-weight: 600; font-size: 0.82rem; min-height: 1.1em; margin-top: 6px; }
-
-    #results {
-      margin-top: 20px;
-      text-align: center;
-      padding: 18px 16px;
-      border: 2px solid var(--ink);
-      border-radius: 14px;
-      background: #fff;
-      box-shadow: 3px 3px 0 rgba(58,50,38,0.1);
+    /* ── Splash overlays ── */
+    .splash {
+      position: fixed;
+      inset: 0;
+      background: rgba(58, 50, 38, 0.55);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 20px;
     }
+    .splash-card {
+      background: #fff;
+      border: 2px solid var(--ink);
+      border-radius: 18px;
+      padding: 32px 24px 28px;
+      max-width: 320px;
+      width: 100%;
+      box-shadow: 4px 4px 0 rgba(58,50,38,0.12);
+      text-align: center;
+      position: relative;
+    }
+    .splash-close {
+      position: absolute;
+      top: 12px; right: 14px;
+      background: none;
+      border: none;
+      font-size: 1.2rem;
+      color: var(--slate);
+      cursor: pointer;
+      line-height: 1;
+      padding: 4px;
+    }
+    .splash-close:hover { color: var(--ink); }
+
+    /* Title splash */
+    #splash-title .splash-card h1 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--forest);
+      margin: 0 0 6px;
+      letter-spacing: -0.5px;
+    }
+    #splash-title .splash-meta {
+      font-size: 0.8rem;
+      color: var(--slate);
+      font-weight: 500;
+      margin-bottom: 24px;
+    }
+    #splash-title .splash-desc {
+      font-size: 0.82rem;
+      color: var(--ink);
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+    #play-btn {
+      width: 100%;
+      font-family: 'Poppins', sans-serif;
+      font-weight: 700;
+      font-size: 1rem;
+      padding: 13px;
+      border: 2px solid var(--forest);
+      border-radius: 10px;
+      background: var(--forest);
+      color: #fff;
+      cursor: pointer;
+      box-shadow: 2px 2px 0 rgba(45,80,22,0.25);
+      transition: transform 0.08s;
+    }
+    #play-btn:active { transform: translate(1px,1px); }
+
+    /* Results splash */
     #score-num { font-size: 3rem; font-weight: 700; color: var(--forest); line-height: 1; }
     #score-num span { font-size: 1.2rem; color: var(--slate); }
-    #band { font-weight: 700; font-size: 1.05rem; margin: 8px 0 4px; color: var(--barn); }
-    .stats { font-size: 0.85rem; color: var(--ink); margin: 10px 0; line-height: 1.6; }
+    #band { font-weight: 700; font-size: 1rem; margin: 8px 0 4px; color: var(--barn); }
+    .stats { font-size: 0.82rem; color: var(--ink); margin: 10px 0; line-height: 1.6; }
     #share-btn {
       font-family: 'Poppins', sans-serif;
-      font-weight: 600; font-size: 0.9rem;
-      padding: 10px 20px;
+      font-weight: 600; font-size: 0.88rem;
+      padding: 9px 20px;
       border: 2px solid var(--forest);
       border-radius: 10px;
       background: var(--forest); color: #fff;
-      cursor: pointer; margin-top: 6px;
+      cursor: pointer; margin-top: 4px;
       box-shadow: 2px 2px 0 rgba(45,80,22,0.2);
     }
-    #countdown { margin-top: 14px; font-size: 0.8rem; color: var(--slate); }
+    #countdown { margin-top: 12px; font-size: 0.78rem; color: var(--slate); }
     #countdown b { color: var(--ink); font-variant-numeric: tabular-nums; }
+
     .hidden { display: none !important; }
   </style>
 </head>
 <body>
   <div id="game-container">
-    <header>
+    <div id="top-bar">
       <h1>There From Here</h1>
-      <div class="sub" id="puzzle-meta">Loading today's puzzle&hellip;</div>
-    </header>
+      <div id="puzzle-meta"></div>
+    </div>
 
-    <div id="map-area">
-      <svg id="map-svg" viewBox="0 0 300 450" preserveAspectRatio="xMidYMid meet"></svg>
-      <canvas id="draw-canvas" width="300" height="450"></canvas>
+    <div id="map-wrap">
+      <div id="map-area">
+        <svg id="map-svg" viewBox="0 0 300 450" preserveAspectRatio="xMidYMid meet"></svg>
+        <canvas id="draw-canvas" width="300" height="450"></canvas>
+      </div>
     </div>
 
     <div id="submit-wrap">
@@ -227,7 +301,6 @@
 
     <div id="controls">
       <div class="controls-row">
-        <!-- Undo / Clear icons -->
         <button class="icon-btn" id="undo-btn" title="Undo">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M9 14L4 9l5-5"/>
@@ -242,7 +315,6 @@
           </svg>
           Start Over
         </button>
-        <!-- Hint button + pip indicators -->
         <div class="hint-controls">
           <button id="hint-btn">Hint</button>
           <div class="hint-pips">
@@ -255,8 +327,22 @@
       <div class="max-note" id="max-note"></div>
       <div id="msg"></div>
     </div>
+  </div>
 
-    <div id="results" class="hidden">
+  <!-- Title splash -->
+  <div class="splash" id="splash-title">
+    <div class="splash-card">
+      <h1>There From Here</h1>
+      <div class="splash-meta" id="splash-puzzle-meta">Loading&hellip;</div>
+      <div class="splash-desc">Draw the driving route between two points on the Vermont map. The closer your line follows the real road, the higher your score.</div>
+      <button id="play-btn">Play</button>
+    </div>
+  </div>
+
+  <!-- Results splash -->
+  <div class="splash hidden" id="splash-results">
+    <div class="splash-card">
+      <button class="splash-close" id="close-results" title="Close">✕</button>
       <div id="score-num">0<span>/100</span></div>
       <div id="band"></div>
       <div class="stats" id="stats"></div>
@@ -264,6 +350,7 @@
       <div id="countdown">Next puzzle in <b id="countdown-time">--:--:--</b></div>
     </div>
   </div>
+
   <script>
   window.PUZZLES_FALLBACK = {
     "puzzles": [
