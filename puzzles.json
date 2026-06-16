@@ -866,8 +866,8 @@
       "date": "2026-07-10",
       "pointA": {
         "name": "Colchester",
-        "lat": 44.5826,
-        "lng": -73.2774
+        "lat": 44.5376,
+        "lng": -73.1418
       },
       "pointB": {
         "name": "Bennington",
@@ -877,8 +877,8 @@
       "optimalDistanceMiles": 111,
       "optimalRoute": [
         [
-          44.5826,
-          -73.2774
+          44.5376,
+          -73.1418
         ],
         [
           42.8779,
@@ -1391,8 +1391,8 @@
       "date": "2026-07-31",
       "pointA": {
         "name": "Bridport",
-        "lat": 43.9401,
-        "lng": -73.3409
+        "lat": 43.9626,
+        "lng": -73.3001
       },
       "pointB": {
         "name": "Wilmington",
@@ -1402,8 +1402,8 @@
       "optimalDistanceMiles": 76,
       "optimalRoute": [
         [
-          43.9401,
-          -73.3409
+          43.9626,
+          -73.3001
         ],
         [
           42.8892,
@@ -1496,8 +1496,8 @@
       },
       "pointB": {
         "name": "Swanton",
-        "lat": 44.9758,
-        "lng": -73.3277
+        "lat": 44.9126,
+        "lng": -73.1251
       },
       "optimalDistanceMiles": 117,
       "optimalRoute": [
@@ -1506,8 +1506,8 @@
           -72.7495
         ],
         [
-          44.9758,
-          -73.3277
+          44.9126,
+          -73.1251
         ]
       ]
     },
@@ -1541,8 +1541,8 @@
       "date": "2026-08-06",
       "pointA": {
         "name": "Milton",
-        "lat": 44.6655,
-        "lng": -73.2679
+        "lat": 44.6376,
+        "lng": -73.1084
       },
       "pointB": {
         "name": "Weston",
@@ -1552,8 +1552,8 @@
       "optimalDistanceMiles": 100,
       "optimalRoute": [
         [
-          44.6655,
-          -73.2679
+          44.6376,
+          -73.1084
         ],
         [
           43.2743,
@@ -1591,23 +1591,23 @@
       "date": "2026-08-08",
       "pointA": {
         "name": "Swanton",
-        "lat": 44.9633,
-        "lng": -73.285
+        "lat": 44.9126,
+        "lng": -73.1251
       },
       "pointB": {
         "name": "Ferrisburgh",
-        "lat": 44.1986,
-        "lng": -73.2608
+        "lat": 44.2001,
+        "lng": -73.2418
       },
       "optimalDistanceMiles": 53,
       "optimalRoute": [
         [
-          44.9633,
-          -73.285
+          44.9126,
+          -73.1251
         ],
         [
-          44.1986,
-          -73.2608
+          44.2001,
+          -73.2418
         ]
       ]
     },
