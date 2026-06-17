@@ -316,7 +316,7 @@
     for (var j = 0; j < drawnS.length; j++) sumDrawn += distToPath(drawnS[j], optS);
 
     var avgDist = Math.max(sumOpt / optS.length, sumDrawn / drawnS.length);
-    var decay = Math.max(20, pathLength(optS) * 0.20);
+    var decay = Math.max(20, pathLength(optS) * 0.12);
     var raw = 100 * Math.exp(-Math.pow(avgDist / decay, 1.5)) * (maxScore / 100);
 
     return {
