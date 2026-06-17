@@ -151,7 +151,7 @@
     [['A', ptA, puzzle.pointA], ['B', ptB, puzzle.pointB]].forEach(function (item) {
       var letter = item[0], p = item[1], info = item[2];
       svg.appendChild(el('circle', { cx: p.x, cy: p.y, r: 6, class: 'point-marker' }));
-      var lbl = el('text', { x: p.x, y: p.y - 9, class: 'point-label', 'text-anchor': 'middle' }));
+      var lbl = el('text', { x: p.x, y: p.y - 9, class: 'point-label', 'text-anchor': 'middle' });
       lbl.textContent = letter;
       svg.appendChild(lbl);
       if (hintsUsed >= 1) {
@@ -434,6 +434,7 @@
     document.getElementById('splash-results').classList.remove('hidden');
     startCountdown();
 
+    // Wire up email signup
     var emailInput = document.getElementById('signup-email');
     var submitBtn  = document.getElementById('signup-submit');
     var msgEl2     = document.getElementById('signup-msg');
@@ -458,7 +459,9 @@
           submitBtn.textContent = '✓ Signed up';
         } else {
           var msg = data.msg || 'Something went wrong.';
+          // Strip Mailchimp's HTML error prefix like "0 - "
           msg = msg.replace(/^\d+ - /, '');
+          // If already subscribed, be friendly
           if (msg.toLowerCase().includes('already subscribed')) msg = 'You\'re already subscribed!';
           msgEl2.textContent = msg;
           msgEl2.className = 'error';
