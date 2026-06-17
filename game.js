@@ -185,7 +185,7 @@
 
   function addShield(x, y, label) {
     svg.appendChild(el('rect', { x: x, y: y - 6, width: 22, height: 12, rx: 3, class: 'shield' }));
-    var t = el('text', { x: x + 11, y: y + 3, class: 'shield-label' }));
+    var t = el('text', { x: x + 11, y: y + 3, class: 'shield-label' });
     t.textContent = label;
     svg.appendChild(t);
   }
