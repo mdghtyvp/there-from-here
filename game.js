@@ -151,7 +151,7 @@
     [['A', ptA, puzzle.pointA], ['B', ptB, puzzle.pointB]].forEach(function (item) {
       var letter = item[0], p = item[1], info = item[2];
       svg.appendChild(el('circle', { cx: p.x, cy: p.y, r: 6, class: 'point-marker' }));
-      var lbl = el('text', { x: p.x, y: p.y - 9, class: 'point-label', 'text-anchor': 'middle' });
+      var lbl = el('text', { x: p.x, y: p.y - 9, class: 'point-label', 'text-anchor': 'middle' }));
       lbl.textContent = letter;
       svg.appendChild(lbl);
       if (hintsUsed >= 1) {
@@ -316,7 +316,7 @@
     for (var j = 0; j < drawnS.length; j++) sumDrawn += distToPath(drawnS[j], optS);
 
     var avgDist = Math.max(sumOpt / optS.length, sumDrawn / drawnS.length);
-    var decay = Math.max(20, pathLength(optS) * 0.20);
+    var decay = Math.max(20, pathLength(optS) * 0.12);
     var raw = 100 * Math.exp(-Math.pow(avgDist / decay, 1.5)) * (maxScore / 100);
 
     return {
@@ -405,10 +405,10 @@
 
   // ---------- Results splash ----------
   var BANDS = [
-    { min: 90, label: 'Grade A! You got there' },
-    { min: 75, label: 'Nice job, neighbor' },
-    { min: 60, label: 'Ya took the scenic route' },
-    { min: 30, label: "You're lost, bud" },
+    { min: 90, label: 'Grade A – you got there' },
+    { min: 75, label: 'Nice job, bud' },
+    { min: 60, label: 'You took the scenic route' },
+    { min: 40, label: "You're lost, bud" },
     { min: 1,  label: "You didn't get there from here" }
   ];
   function bandFor(score) {
@@ -425,17 +425,15 @@
       'Hints used: ' + hintsUsed + '/3';
 
     document.getElementById('share-btn').onclick = function () {
-      var text = '📍 There From Here #' + puzzle.id + '\n' +
+      var text = 'There From Here #' + puzzle.id + '\n' +
         result.score + '/100 — ' + band + '\n' +
-        'Hints: ' + hintsUsed + '/3' + '\n' +
-        'Play at vermontpublic.org/games';
+        'Hints: ' + hintsUsed + '/3';
       copyToClipboard(text, this);
     };
 
     document.getElementById('splash-results').classList.remove('hidden');
     startCountdown();
 
-    // Wire up email signup
     var emailInput = document.getElementById('signup-email');
     var submitBtn  = document.getElementById('signup-submit');
     var msgEl2     = document.getElementById('signup-msg');
@@ -460,9 +458,7 @@
           submitBtn.textContent = '✓ Signed up';
         } else {
           var msg = data.msg || 'Something went wrong.';
-          // Strip Mailchimp's HTML error prefix like "0 - "
           msg = msg.replace(/^\d+ - /, '');
-          // If already subscribed, be friendly
           if (msg.toLowerCase().includes('already subscribed')) msg = 'You\'re already subscribed!';
           msgEl2.textContent = msg;
           msgEl2.className = 'error';
