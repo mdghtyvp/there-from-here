@@ -427,7 +427,8 @@
     document.getElementById('share-btn').onclick = function () {
       var text = 'There From Here #' + puzzle.id + '\n' +
         result.score + '/100 — ' + band + '\n' +
-        'Hints: ' + hintsUsed + '/3';
+        'Hints: ' + hintsUsed + '/3' + '\n' +
+        'Play at vermontpublic.org/games';
       copyToClipboard(text, this);
     };
 
