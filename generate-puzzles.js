@@ -10,8 +10,7 @@ const fs = require('fs');
 
 const BOUNDS = { north: 45.017, south: 42.726, west: -73.438, east: -71.464 };
 
-// Detailed VT polygon. Western side follows NY border and Lake Champlain;
-// eastern side follows the CT River (NH border) and MA border closely.
+// Detailed VT polygon — fallback only if GeoJSON fetch fails.
 const VT_POLY = [
   // Northern border (east → west)
   [45.017, -71.503], [45.017, -72.103], [45.013, -73.343],
@@ -34,7 +33,7 @@ const VT_POLY = [
   [44.503, -71.573], [44.916, -71.503], [45.017, -71.503]
 ];
 
-// Vermont municipalities for nearest-town lookup.
+// All Vermont municipalities with lat/lng for nearest-town lookup.
 const VT_TOWNS = [
   { name: 'Burlington', lat: 44.4759, lng: -73.2121 },
   { name: 'South Burlington', lat: 44.4670, lng: -73.1710 },
@@ -91,6 +90,7 @@ const VT_TOWNS = [
   { name: 'Berlin', lat: 44.2087, lng: -72.5918 },
   { name: 'Plainfield', lat: 44.2787, lng: -72.4268 },
   { name: 'Marshfield', lat: 44.3337, lng: -72.3393 },
+  { name: 'Peacham', lat: 44.3237, lng: -72.1793 },
   { name: 'Danville', lat: 44.4137, lng: -72.1168 },
   { name: 'Walden', lat: 44.5037, lng: -72.2418 },
   { name: 'Albany', lat: 44.7137, lng: -72.3843 },
@@ -186,8 +186,10 @@ const VT_TOWNS = [
   { name: 'Canaan', lat: 44.9937, lng: -71.6593 },
   { name: 'Bloomfield', lat: 44.7737, lng: -71.6843 },
   { name: 'Brunswick', lat: 44.6787, lng: -71.6243 },
+  { name: 'Maidstone', lat: 44.6537, lng: -71.8643 },
   { name: 'Averill', lat: 44.9937, lng: -71.7593 },
   { name: 'Norton', lat: 44.9937, lng: -71.8093 },
+  { name: 'Averys Gore', lat: 44.8637, lng: -71.7593 },
   { name: 'Glastenbury', lat: 42.9737, lng: -73.0543 },
   { name: 'Stratton', lat: 43.1037, lng: -72.9093 },
   { name: 'Winhall', lat: 43.1537, lng: -72.9243 },
@@ -241,9 +243,12 @@ const VT_TOWNS = [
   { name: 'Arlington', lat: 43.0737, lng: -73.1493 },
   { name: 'Sunderland', lat: 43.1037, lng: -73.0843 },
   { name: 'Sandgate', lat: 43.1637, lng: -73.1543 },
+  { name: 'Rupert', lat: 43.2637, lng: -73.2043 },
   { name: 'Landgrove', lat: 43.2637, lng: -72.8343 },
+  { name: 'Weston', lat: 43.2937, lng: -72.7993 },
   { name: 'Baltimore', lat: 43.3637, lng: -72.5593 },
   { name: 'Reading', lat: 43.4837, lng: -72.5793 },
+  { name: 'Felchville', lat: 43.4737, lng: -72.5743 },
   { name: 'Weathersfield', lat: 43.4287, lng: -72.4568 },
   { name: 'Ascutney', lat: 43.4337, lng: -72.4293 },
   { name: 'Hartland', lat: 43.5637, lng: -72.3843 },
@@ -258,10 +263,37 @@ const VT_TOWNS = [
   { name: 'Starksboro', lat: 44.2337, lng: -73.0093 },
   { name: 'Huntington', lat: 44.3237, lng: -72.9768 },
   { name: 'Bolton', lat: 44.3937, lng: -72.8768 },
+  { name: 'Buels Gore', lat: 44.4337, lng: -72.9268 },
   { name: 'Jericho', lat: 44.4887, lng: -72.9918 },
   { name: 'Underhill', lat: 44.5287, lng: -72.8993 },
   { name: 'Westford', lat: 44.6237, lng: -73.0193 },
+  { name: 'Fairfax', lat: 44.6637, lng: -73.0093 },
+  { name: 'Richford', lat: 44.9987, lng: -72.6718 },
 ];
+
+// Fetch the authoritative VT polygon from the same GeoJSON the game uses.
+// Returns an array of [lat, lng] pairs, or null on failure (caller falls back to VT_POLY).
+async function fetchVTPolygon() {
+  try {
+    const url = 'https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json';
+    const res = await fetch(url, { headers: { 'User-Agent': 'there-from-here-puzzle-gen/1.0' } });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const gj = await res.json();
+    const feature = gj.features.find(f => f.properties && f.properties.name === 'Vermont');
+    if (!feature) throw new Error('VT feature not found');
+    const geom = feature.geometry;
+    let rings = [];
+    if (geom.type === 'Polygon') rings = geom.coordinates;
+    else if (geom.type === 'MultiPolygon') geom.coordinates.forEach(p => rings = rings.concat(p));
+    // Use the largest ring (main landmass, excludes islands)
+    const best = rings.reduce((a, b) => (b.length > a.length ? b : a), rings[0]);
+    // Convert [lng, lat] GeoJSON to [lat, lng] for pointInPolygon
+    return best.map(c => [c[1], c[0]]);
+  } catch (e) {
+    console.warn(`  Could not fetch VT GeoJSON polygon: ${e.message}. Using fallback.`);
+    return null;
+  }
+}
 
 function pointInPolygon(lat, lng, poly) {
   let inside = false;
@@ -292,18 +324,18 @@ function nearestTown(lat, lng) {
   return best.name;
 }
 
-function randomVTPoint() {
+function randomVTPoint(poly) {
   for (let i = 0; i < 200; i++) {
     const lat = parseFloat((BOUNDS.south + Math.random() * (BOUNDS.north - BOUNDS.south)).toFixed(4));
     const lng = parseFloat((BOUNDS.west  + Math.random() * (BOUNDS.east  - BOUNDS.west)).toFixed(4));
-    if (pointInPolygon(lat, lng, VT_POLY)) return { lat, lng };
+    if (pointInPolygon(lat, lng, poly)) return { lat, lng };
   }
   throw new Error('Could not find valid VT point after 200 attempts');
 }
 
 async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-async function snapToRoad(lat, lng) {
+async function snapToRoad(lat, lng, poly) {
   const url = `https://router.project-osrm.org/nearest/v1/driving/${lng},${lat}?number=1`;
   const res = await fetch(url, { headers: { 'User-Agent': 'there-from-here-puzzle-gen/1.0' } });
   if (!res.ok) throw new Error(`OSRM nearest ${res.status}`);
@@ -311,7 +343,7 @@ async function snapToRoad(lat, lng) {
   if (!data.waypoints || !data.waypoints.length) throw new Error('No waypoints from OSRM nearest');
   const [snappedLng, snappedLat] = data.waypoints[0].location;
   const pt = { lat: parseFloat(snappedLat.toFixed(4)), lng: parseFloat(snappedLng.toFixed(4)) };
-  if (!pointInPolygon(pt.lat, pt.lng, VT_POLY)) throw new Error('Snapped point outside VT');
+  if (!pointInPolygon(pt.lat, pt.lng, poly)) throw new Error('Snapped point outside VT');
   return pt;
 }
 
@@ -322,7 +354,7 @@ async function getRoute(a, b, waypointCount = 10) {
   const data = await res.json();
   if (!data.routes || !data.routes.length) throw new Error('No route from OSRM');
   const route = data.routes[0];
-  const coords = route.geometry.coordinates;
+  const coords = route.geometry.coordinates; // [[lng, lat], ...]
   const waypoints = [];
   for (let i = 0; i < waypointCount; i++) {
     const idx = Math.round(i * (coords.length - 1) / (waypointCount - 1));
@@ -334,21 +366,24 @@ async function getRoute(a, b, waypointCount = 10) {
   return { distanceMiles: Math.round(route.distance / 1609.34), waypoints };
 }
 
-async function generatePuzzle(id, dateStr) {
+async function generatePuzzle(id, dateStr, poly) {
   for (let attempt = 0; attempt < 20; attempt++) {
     try {
-      const rawA = randomVTPoint();
-      const rawB = randomVTPoint();
+      const rawA = randomVTPoint(poly);
+      const rawB = randomVTPoint(poly);
       if (haversineMiles(rawA.lat, rawA.lng, rawB.lat, rawB.lng) < 25) continue;
 
-      const [a, b] = await Promise.all([snapToRoad(rawA.lat, rawA.lng), snapToRoad(rawB.lat, rawB.lng)]);
+      const [a, b] = await Promise.all([snapToRoad(rawA.lat, rawA.lng, poly), snapToRoad(rawB.lat, rawB.lng, poly)]);
       await sleep(300);
 
       const { distanceMiles, waypoints } = await getRoute(a, b);
       if (distanceMiles < 30) continue;
 
+      // Names from local lookup — no Nominatim call needed
       const nameA = nearestTown(a.lat, a.lng);
       const nameB = nearestTown(b.lat, b.lng);
+
+      // Reject if both points map to the same town
       if (nameA === nameB) continue;
 
       return {
@@ -372,6 +407,10 @@ async function main() {
   const START_ID = 7;
   const START_DATE = new Date('2026-06-17');
 
+  console.log('Fetching authoritative VT boundary polygon...');
+  const poly = (await fetchVTPolygon()) || VT_POLY;
+  console.log(`Using polygon with ${poly.length} points`);
+
   let existing = { puzzles: [] };
   try {
     existing = JSON.parse(fs.readFileSync('puzzles.json', 'utf8'));
@@ -391,7 +430,7 @@ async function main() {
 
     try {
       console.log(`Generating #${id} (${dateStr})...`);
-      const puzzle = await generatePuzzle(id, dateStr);
+      const puzzle = await generatePuzzle(id, dateStr, poly);
       console.log(`  ✓ ${puzzle.pointA.name} → ${puzzle.pointB.name} (${puzzle.optimalDistanceMiles} mi)`);
       newPuzzles.push(puzzle);
     } catch (e) {
