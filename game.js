@@ -406,8 +406,8 @@
   // ---------- Results splash ----------
   var BANDS = [
     { min: 90, label: 'Grade A – you got there' },
-    { min: 75, label: 'Nice job, bud' },
-    { min: 60, label: 'You took the scenic route' },
+    { min: 75, label: 'Nice job, neighbor' },
+    { min: 60, label: 'Ya took the scenic route' },
     { min: 40, label: "You're lost, bud" },
     { min: 1,  label: "You didn't get there from here" }
   ];
@@ -515,7 +515,7 @@
     puzzle = puzzles[puzzleIndex];
 
     var et = etDate(new Date());
-    var dateStr = et.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+    var dateStr = et.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
     var metaText = 'Puzzle #' + puzzle.id + ' • ' + dateStr;
     puzzleMeta.textContent = metaText;
     document.getElementById('splash-puzzle-meta').textContent = metaText;
