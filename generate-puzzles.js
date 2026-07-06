@@ -272,6 +272,30 @@ const VT_TOWNS = [
   { name: 'Richford', lat: 44.9987, lng: -72.6718 },
 ];
 
+// Fetch the authoritative VT polygon from the same GeoJSON the game uses.
+// Returns an array of [lat, lng] pairs, or null on failure (caller falls back to VT_POLY).
+async function fetchVTPolygon() {
+  try {
+    const url = 'https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json';
+    const res = await fetch(url, { headers: { 'User-Agent': 'there-from-here-puzzle-gen/1.0' } });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const gj = await res.json();
+    const feature = gj.features.find(f => f.properties && f.properties.name === 'Vermont');
+    if (!feature) throw new Error('VT feature not found');
+    const geom = feature.geometry;
+    let rings = [];
+    if (geom.type === 'Polygon') rings = geom.coordinates;
+    else if (geom.type === 'MultiPolygon') geom.coordinates.forEach(p => rings = rings.concat(p));
+    // Use the largest ring (main landmass, excludes islands)
+    const best = rings.reduce((a, b) => (b.length > a.length ? b : a), rings[0]);
+    // Convert [lng, lat] GeoJSON to [lat, lng] for pointInPolygon
+    return best.map(c => [c[1], c[0]]);
+  } catch (e) {
+    console.warn(`  Could not fetch VT GeoJSON polygon: ${e.message}. Using fallback.`);
+    return null;
+  }
+}
+
 function pointInPolygon(lat, lng, poly) {
   let inside = false;
   for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
@@ -301,18 +325,18 @@ function nearestTown(lat, lng) {
   return best.name;
 }
 
-function randomVTPoint() {
+function randomVTPoint(poly) {
   for (let i = 0; i < 200; i++) {
     const lat = parseFloat((BOUNDS.south + Math.random() * (BOUNDS.north - BOUNDS.south)).toFixed(4));
     const lng = parseFloat((BOUNDS.west  + Math.random() * (BOUNDS.east  - BOUNDS.west)).toFixed(4));
-    if (pointInPolygon(lat, lng, VT_POLY)) return { lat, lng };
+    if (pointInPolygon(lat, lng, poly)) return { lat, lng };
   }
   throw new Error('Could not find valid VT point after 200 attempts');
 }
 
 async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-async function snapToRoad(lat, lng) {
+async function snapToRoad(lat, lng, poly) {
   const url = `https://router.project-osrm.org/nearest/v1/driving/${lng},${lat}?number=1`;
   const res = await fetch(url, { headers: { 'User-Agent': 'there-from-here-puzzle-gen/1.0' } });
   if (!res.ok) throw new Error(`OSRM nearest ${res.status}`);
@@ -320,7 +344,7 @@ async function snapToRoad(lat, lng) {
   if (!data.waypoints || !data.waypoints.length) throw new Error('No waypoints from OSRM nearest');
   const [snappedLng, snappedLat] = data.waypoints[0].location;
   const pt = { lat: parseFloat(snappedLat.toFixed(4)), lng: parseFloat(snappedLng.toFixed(4)) };
-  if (!pointInPolygon(pt.lat, pt.lng, VT_POLY)) throw new Error('Snapped point outside VT');
+  if (!pointInPolygon(pt.lat, pt.lng, poly)) throw new Error('Snapped point outside VT');
   return pt;
 }
 
@@ -343,14 +367,14 @@ async function getRoute(a, b, waypointCount = 10) {
   return { distanceMiles: Math.round(route.distance / 1609.34), waypoints };
 }
 
-async function generatePuzzle(id, dateStr) {
+async function generatePuzzle(id, dateStr, poly) {
   for (let attempt = 0; attempt < 20; attempt++) {
     try {
-      const rawA = randomVTPoint();
-      const rawB = randomVTPoint();
+      const rawA = randomVTPoint(poly);
+      const rawB = randomVTPoint(poly);
       if (haversineMiles(rawA.lat, rawA.lng, rawB.lat, rawB.lng) < 25) continue;
 
-      const [a, b] = await Promise.all([snapToRoad(rawA.lat, rawA.lng), snapToRoad(rawB.lat, rawB.lng)]);
+      const [a, b] = await Promise.all([snapToRoad(rawA.lat, rawA.lng, poly), snapToRoad(rawB.lat, rawB.lng, poly)]);
       await sleep(300);
 
       const { distanceMiles, waypoints } = await getRoute(a, b);
@@ -384,6 +408,10 @@ async function main() {
   const START_ID = 7;
   const START_DATE = new Date('2026-06-17');
 
+  console.log('Fetching authoritative VT boundary polygon...');
+  const poly = (await fetchVTPolygon()) || VT_POLY;
+  console.log(`Using polygon with ${poly.length} points`);
+
   let existing = { puzzles: [] };
   try {
     existing = JSON.parse(fs.readFileSync('puzzles.json', 'utf8'));
@@ -403,7 +431,7 @@ async function main() {
 
     try {
       console.log(`Generating #${id} (${dateStr})...`);
-      const puzzle = await generatePuzzle(id, dateStr);
+      const puzzle = await generatePuzzle(id, dateStr, poly);
       console.log(`  ✓ ${puzzle.pointA.name} → ${puzzle.pointB.name} (${puzzle.optimalDistanceMiles} mi)`);
       newPuzzles.push(puzzle);
     } catch (e) {
