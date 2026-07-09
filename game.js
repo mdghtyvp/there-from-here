@@ -2,6 +2,35 @@
 (function () {
   'use strict';
 
+  var SUPABASE_URL = 'https://eysgpsvsthrlxpjbherm.supabase.co';
+  var SUPABASE_ANON_KEY = 'sb_publishable_iv_m5XEjdsA_KovOXIpRwQ_UAhPsyJ-';
+
+  function submitScoreAndFetchStats(puzzleId, score, cb) {
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) { cb(null); return; }
+    var headers = {
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=minimal',
+    };
+    fetch(SUPABASE_URL + '/rest/v1/daily_scores', {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify({ puzzle_id: puzzleId, score: score }),
+    })
+      .catch(function () {})
+      .then(function () {
+        return fetch(SUPABASE_URL + '/rest/v1/rpc/get_puzzle_stats', {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({ p_puzzle_id: puzzleId, p_score: score }),
+        });
+      })
+      .then(function (r) { return r.json(); })
+      .then(function (data) { cb(data); })
+      .catch(function () { cb(null); });
+  }
+
   // ---------- Map projection ----------
   var BOUNDS = { north: 45.017, south: 42.726, west: -73.438, east: -71.464 };
   var SVG_W = 300, SVG_H = 450;
@@ -151,7 +180,7 @@
     [['A', ptA, puzzle.pointA], ['B', ptB, puzzle.pointB]].forEach(function (item) {
       var letter = item[0], p = item[1], info = item[2];
       svg.appendChild(el('circle', { cx: p.x, cy: p.y, r: 6, class: 'point-marker' }));
-      var lbl = el('text', { x: p.x, y: p.y - 9, class: 'point-label', 'text-anchor': 'middle' });
+      var lbl = el('text', { x: p.x, y: p.y - 9, class: 'point-label', 'text-anchor': 'middle' }));
       lbl.textContent = letter;
       svg.appendChild(lbl);
       if (hintsUsed >= 1) {
@@ -435,6 +464,20 @@
     document.getElementById('splash-results').classList.remove('hidden');
     startCountdown();
 
+    // Crowd stats — submit score and show aggregate stats when ready
+    var crowdEl = document.getElementById('crowd-stats');
+    var avgEl   = document.getElementById('stat-avg');
+    var rankEl  = document.getElementById('stat-rank');
+    var rankLbl = document.getElementById('stat-rank-label');
+    crowdEl.classList.add('hidden');
+    submitScoreAndFetchStats(puzzle.id, result.score, function (data) {
+      if (!data || !data.total) return;
+      avgEl.textContent  = data.avg_score + '/100';
+      rankEl.textContent = '#' + data.rank;
+      rankLbl.textContent = 'of ' + data.total + ' driver' + (data.total === 1 ? '' : 's');
+      crowdEl.classList.remove('hidden');
+    });
+
     // Wire up email signup
     var emailInput = document.getElementById('signup-email');
     var submitBtn  = document.getElementById('signup-submit');
@@ -460,9 +503,7 @@
           submitBtn.textContent = '✓ Signed up';
         } else {
           var msg = data.msg || 'Something went wrong.';
-          // Strip Mailchimp's HTML error prefix like "0 - "
           msg = msg.replace(/^\d+ - /, '');
-          // If already subscribed, be friendly
           if (msg.toLowerCase().includes('already subscribed')) msg = 'You\'re already subscribed!';
           msgEl2.textContent = msg;
           msgEl2.className = 'error';

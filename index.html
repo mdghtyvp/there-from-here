@@ -265,8 +265,43 @@
     /* Results splash */
     #score-num { font-size: 3rem; font-weight: 700; color: var(--forest); line-height: 1; }
     #score-num span { font-size: 1.2rem; color: var(--slate); }
-    #band { font-weight: 700; font-size: 1rem; margin: 8px 0 4px; color: var(--barn); }
+    #band { font-weight: 700; font-size: 1rem; margin: 8px 0 10px; color: var(--barn); }
     .stats { font-size: 0.82rem; color: var(--ink); margin: 10px 0; line-height: 1.6; }
+
+    /* Crowd stats (today's average + rank) */
+    #crowd-stats {
+      display: flex;
+      gap: 0;
+      margin: 0 0 4px;
+      border: 1.5px solid rgba(58,50,38,0.12);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    #crowd-stats.hidden { display: none; }
+    .crowd-stat {
+      flex: 1;
+      padding: 8px 6px 7px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+    .crowd-stat + .crowd-stat {
+      border-left: 1.5px solid rgba(58,50,38,0.12);
+    }
+    .crowd-stat-value {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--ink);
+      font-variant-numeric: tabular-nums;
+      line-height: 1.1;
+    }
+    .crowd-stat-label {
+      font-size: 0.65rem;
+      color: var(--slate);
+      font-weight: 500;
+      letter-spacing: 0.01em;
+    }
     #share-btn {
       font-family: 'Poppins', sans-serif;
       font-weight: 600; font-size: 0.88rem;
@@ -395,9 +430,19 @@
   <!-- Results splash -->
   <div class="splash hidden" id="splash-results">
     <div class="splash-card">
-      <button class="splash-close" id="close-results" title="Close">✕</button>
+      <button class="splash-close" id="close-results" title="Close">&#x2715;</button>
       <div id="score-num">0<span>/100</span></div>
       <div id="band"></div>
+      <div id="crowd-stats" class="hidden">
+        <div class="crowd-stat">
+          <span class="crowd-stat-value" id="stat-avg">--</span>
+          <span class="crowd-stat-label">today's average</span>
+        </div>
+        <div class="crowd-stat">
+          <span class="crowd-stat-value" id="stat-rank">--</span>
+          <span class="crowd-stat-label" id="stat-rank-label">of -- drivers</span>
+        </div>
+      </div>
       <div class="stats" id="stats"></div>
       <button id="share-btn">Share Result</button>
       <div id="countdown">Next puzzle in <b id="countdown-time">--:--:--</b></div>
