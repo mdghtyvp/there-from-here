@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>There From Here — Illustrator Tracing Reference</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, sans-serif; background: #1a1a1a; color: #e0e0e0; }
+
+  header {
+    padding: 14px 20px;
+    background: #111;
+    border-bottom: 1px solid #333;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  header h1 { font-size: 15px; font-weight: 600; color: #fff; }
+  header p { font-size: 12px; color: #888; line-height: 1.4; max-width: 600px; }
+
+  .controls {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 10px 20px;
+    background: #111;
+    border-bottom: 1px solid #2a2a2a;
+    align-items: center;
+  }
+  .controls label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    padding: 4px 10px;
+    border-radius: 4px;
+    border: 1px solid #333;
+    user-select: none;
+  }
+  .controls label:hover { border-color: #555; }
+  .controls input[type=checkbox] { accent-color: #4a9eff; }
+  .swatch { display: inline-block; width: 12px; height: 3px; border-radius: 2px; vertical-align: middle; }
+
+  #map { width: 100%; height: calc(100vh - 115px); }
+
+  .print-note {
+    position: absolute;
+    bottom: 20px;
+    right: 10px;
+    background: rgba(0,0,0,0.75);
+    color: #aaa;
+    font-size: 11px;
+    padding: 6px 10px;
+    border-radius: 4px;
+    z-index: 1000;
+    pointer-events: none;
+  }
+
+  @media print {
+    header, .controls, .print-note { display: none !important; }
+    #map { height: 100vh !important; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>There From Here — Illustrator Tracing Reference</h1>
+    <p>Open this file locally in a browser. Tiles load from the internet (no login required).
+      The orange grid shows the game's SVG coordinate space (300×450, 50px intervals) —
+      hover a grid line to see its SVG coordinate. Red outline = viewBox edge.
+      Lock the view, then screenshot or print to PDF for tracing.</p>
+  </div>
+</header>
+
+<div class="controls">
+  <label>
+    <input type="checkbox" id="tog-boundary" checked>
+    <span class="swatch" style="background:#ff4444;height:2px;"></span>
+    VT Boundary (mainland)
+  </label>
+  <label>
+    <input type="checkbox" id="tog-islands" checked>
+    <span class="swatch" style="background:#ff8844;height:2px;border-top:2px dashed #ff8844;background:none;"></span>
+    Champlain Islands (approx.)
+  </label>
+  <label>
+    <input type="checkbox" id="tog-i89" checked>
+    <span class="swatch" style="background:#4a9eff;"></span>
+    I-89
+  </label>
+  <label>
+    <input type="checkbox" id="tog-i91" checked>
+    <span class="swatch" style="background:#44cc88;"></span>
+    I-91
+  </label>
+  <label>
+    <input type="checkbox" id="tog-greenmtns" checked>
+    <span class="swatch" style="background:#aa66ff;width:12px;height:12px;opacity:0.4;border-radius:2px;"></span>
+    Green Mountains
+  </label>
+  <label>
+    <input type="checkbox" id="tog-grid" checked>
+    <span class="swatch" style="background:#f80;"></span>
+    SVG coordinate grid
+  </label>
+  <label>
+    <input type="checkbox" id="tog-lock">
+    🔒 Lock view (prevent pan/zoom)
+  </label>
+  <label>
+    <input type="checkbox" id="tog-dark">
+    Dark basemap
+  </label>
+</div>
+
+<div id="map"></div>
+<div class="print-note">© OpenStreetMap contributors</div>
+
+<script>
+const GAME_BOUNDS = L.latLngBounds(
+  [42.726, -73.438],
+  [45.017, -71.464]
+);
+
+const map = L.map('map', { zoomSnap: 0.1, zoomControl: true });
+map.fitBounds(GAME_BOUNDS, { padding: [20, 20] });
+
+const lightTiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a> contributors',
+  maxZoom: 19,
+});
+const darkTiles = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', {
+  attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a> contributors © <a href="https://carto.com/">CARTO</a>',
+  subdomains: 'abcd',
+  maxZoom: 19,
+});
+lightTiles.addTo(map);
+
+L.rectangle(GAME_BOUNDS, {
+  color: '#e63', weight: 2, opacity: 0.9, fill: false,
+}).addTo(map).bindTooltip('Game bounds / viewBox edge (0 0 300 450)', { sticky: true });
+
+const svgGridLngs  = [-73.17674, -72.81387, -72.45100, -72.08813, -71.72526];
+const svgGridLats  = [44.82500, 44.55726, 44.28829, 44.01808, 43.74663, 43.47395, 43.20003, 42.92488];
+const svgXLabels   = [50, 100, 150, 200, 250];
+const svgYLabels   = [50, 100, 150, 200, 250, 300, 350, 400];
+
+const gridGroup = L.layerGroup();
+svgGridLngs.forEach((lng, i) => {
+  L.polyline([[45.10, lng], [42.64, lng]], {
+    color: '#f80', weight: 0.75, opacity: 0.6, dashArray: '3 3',
+  }).bindTooltip(`SVG x=${svgXLabels[i]}`, { sticky: true }).addTo(gridGroup);
+});
+svgGridLats.forEach((lat, i) => {
+  L.polyline([[lat, -73.54], [lat, -71.36]], {
+    color: '#f80', weight: 0.75, opacity: 0.6, dashArray: '3 3',
+  }).bindTooltip(`SVG y=${svgYLabels[i]}`, { sticky: true }).addTo(gridGroup);
+});
+gridGroup.addTo(map);
+
+const vtMainland = [
+  [45.013027,-71.503554],[44.914442,-71.4926],[44.750133,-71.629524],
+  [44.585825,-71.536416],[44.41604,-71.700724],[44.322932,-72.034817],
+  [44.07647,-72.02934],[43.994316,-72.116971],[43.769761,-72.204602],
+  [43.572591,-72.379864],[43.150867,-72.456542],[43.008466,-72.445588],
+  [42.953697,-72.533219],[42.80582,-72.544173],[42.729142,-72.456542],
+  [42.745573,-73.267129],[42.833204,-73.278083],[43.523299,-73.245221],
+  [43.687607,-73.404052],[43.769761,-73.349283],[44.043608,-73.436914],
+  [44.246255,-73.321898],[44.437948,-73.294514],[44.618687,-73.387622],
+  [44.804903,-73.332852],[45.013027,-73.343806],[45.002073,-72.308664],
+  [45.013027,-71.503554]
+];
+const boundaryLayer = L.polyline(vtMainland, { color: '#ff4444', weight: 2.5, opacity: 0.9 }).addTo(map);
+boundaryLayer.bindTooltip('VT Mainland Boundary — trace this for id="vt-mainland"', { sticky: true });
+
+const islandData = [
+  { name: 'Isle La Motte',
+    coords: [[44.876,-73.325],[44.858,-73.307],[44.825,-73.295],[44.808,-73.303],[44.818,-73.329],[44.847,-73.344],[44.876,-73.325]] },
+  { name: 'North Hero',
+    coords: [[44.842,-73.285],[44.815,-73.265],[44.799,-73.259],[44.785,-73.266],[44.800,-73.288],[44.822,-73.298],[44.842,-73.285]] },
+  { name: 'Grand Isle',
+    coords: [[44.780,-73.291],[44.760,-73.267],[44.723,-73.245],[44.697,-73.249],[44.710,-73.278],[44.745,-73.304],[44.770,-73.308],[44.780,-73.291]] },
+  { name: 'South Hero',
+    coords: [[44.695,-73.293],[44.674,-73.271],[44.652,-73.265],[44.638,-73.279],[44.655,-73.306],[44.680,-73.315],[44.695,-73.293]] },
+];
+const islandLayers = islandData.map(island =>
+  L.polyline(island.coords, { color: '#ff8844', weight: 2, opacity: 0.85, dashArray: '5 3' })
+    .addTo(map).bindTooltip(`${island.name} — APPROXIMATE, trace from satellite`, { sticky: true })
+);
+
+const i89Coords = [
+  [45.006,-73.107],[44.813,-73.108],[44.472,-73.201],[44.408,-73.143],
+  [44.369,-73.091],[44.282,-72.897],[44.261,-72.575],[44.133,-72.422],
+  [43.997,-72.363],[43.918,-72.307],[43.650,-72.319],
+];
+const i89Layer = L.polyline(i89Coords, { color: '#4a9eff', weight: 3, opacity: 0.9 }).addTo(map);
+i89Layer.bindTooltip('I-89 — trace for id="interstate-i89"', { sticky: true });
+
+const i91Coords = [
+  [42.737,-72.522],[42.852,-72.557],[43.091,-72.491],[43.296,-72.451],
+  [43.461,-72.363],[43.650,-72.319],[43.841,-72.083],[44.035,-71.999],
+  [44.228,-72.002],[44.419,-71.993],[44.532,-71.869],[44.668,-71.791],
+  [44.860,-71.552],[44.990,-71.505],
+];
+const i91Layer = L.polyline(i91Coords, { color: '#44cc88', weight: 3, opacity: 0.9 }).addTo(map);
+i91Layer.bindTooltip('I-91 — trace for id="interstate-i91"', { sticky: true });
+
+const greenMtnCoords = [
+  [44.900,-72.750],[44.850,-72.550],[44.680,-72.410],[44.530,-72.490],
+  [44.350,-72.580],[44.100,-72.680],[43.900,-72.750],[43.700,-72.820],
+  [43.500,-72.820],[43.300,-72.750],[43.150,-72.730],[43.000,-72.680],
+  [42.850,-72.650],[42.850,-72.900],[43.050,-72.950],[43.300,-73.000],
+  [43.600,-73.050],[43.900,-73.000],[44.200,-72.900],[44.500,-72.780],
+  [44.700,-72.700],[44.900,-72.750],
+];
+const greenMtnLayer = L.polygon(greenMtnCoords, {
+  color: '#aa66ff', weight: 1.5, opacity: 0.8, fillColor: '#aa66ff', fillOpacity: 0.15,
+}).addTo(map);
+greenMtnLayer.bindTooltip('Green Mountains corridor — trace/adjust for id="green-mountains"', { sticky: true });
+
+function bindToggle(id, layer) {
+  document.getElementById(id).addEventListener('change', function() {
+    this.checked ? layer.addTo(map) : layer.remove();
+  });
+}
+bindToggle('tog-grid', gridGroup);
+bindToggle('tog-boundary', boundaryLayer);
+bindToggle('tog-i89', i89Layer);
+bindToggle('tog-i91', i91Layer);
+bindToggle('tog-greenmtns', greenMtnLayer);
+
+document.getElementById('tog-islands').addEventListener('change', function() {
+  islandLayers.forEach(l => this.checked ? l.addTo(map) : l.remove());
+});
+
+document.getElementById('tog-lock').addEventListener('change', function() {
+  if (this.checked) {
+    map.setMaxBounds(GAME_BOUNDS.pad(0.05));
+    map.dragging.disable(); map.scrollWheelZoom.disable();
+    map.doubleClickZoom.disable(); map.touchZoom.disable(); map.boxZoom.disable();
+  } else {
+    map.setMaxBounds(null);
+    map.dragging.enable(); map.scrollWheelZoom.enable();
+    map.doubleClickZoom.enable(); map.touchZoom.enable(); map.boxZoom.enable();
+  }
+});
+
+document.getElementById('tog-dark').addEventListener('change', function() {
+  if (this.checked) { map.removeLayer(lightTiles); darkTiles.addTo(map); }
+  else { map.removeLayer(darkTiles); lightTiles.addTo(map); }
+});
+</script>
+
+</body>
+</html>

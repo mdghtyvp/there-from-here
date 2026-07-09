@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  There From Here — Game Coordinate Template
+  ==========================================
+  viewBox: 0 0 300 450  (matches game.js exactly)
+  Projection: Web Mercator with 14px padding
+  Bounds: north=45.017 south=42.726 west=-73.438 east=-71.464
+
+  HOW TO USE:
+  1. Open this SVG in Illustrator (or Inkscape).
+  2. Set your artboard to exactly 300 × 450 px.
+  3. Lock the "REFERENCE — DO NOT EDIT" layer.
+  4. Draw your hand-drawn versions on a new layer above it.
+  5. When exporting, include ONLY your drawn paths (not this reference layer).
+  6. Keep the same viewBox="0 0 300 450" in the delivered file.
+
+  REQUIRED DELIVERY IDs:
+    vt-mainland           — closed polygon
+    vt-island-isle-la-motte
+    vt-island-north-hero
+    vt-island-grand-isle
+    vt-island-south-hero
+    interstate-i89        — open path
+    interstate-i91        — open path
+    green-mountains       — closed polygon (use your judgment on shape)
+
+  GRID: 50px intervals to aid alignment checks.
+-->
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 300 450"
+     width="300"
+     height="450">
+
+  <title>There From Here — Game Coordinate Template</title>
+
+  <!-- Background -->
+  <rect width="300" height="450" fill="#f8f6f0"/>
+
+  <!-- ── GRID (50px intervals) ── -->
+  <g id="grid" fill="none" stroke="#c8c0b0" stroke-width="0.5" opacity="0.6">
+    <line x1="50"  y1="0" x2="50"  y2="450"/>
+    <line x1="100" y1="0" x2="100" y2="450"/>
+    <line x1="150" y1="0" x2="150" y2="450"/>
+    <line x1="200" y1="0" x2="200" y2="450"/>
+    <line x1="250" y1="0" x2="250" y2="450"/>
+    <line x1="0" y1="50"  x2="300" y2="50"/>
+    <line x1="0" y1="100" x2="300" y2="100"/>
+    <line x1="0" y1="150" x2="300" y2="150"/>
+    <line x1="0" y1="200" x2="300" y2="200"/>
+    <line x1="0" y1="250" x2="300" y2="250"/>
+    <line x1="0" y1="300" x2="300" y2="300"/>
+    <line x1="0" y1="350" x2="300" y2="350"/>
+    <line x1="0" y1="400" x2="300" y2="400"/>
+  </g>
+
+  <!-- Grid labels -->
+  <g id="grid-labels" font-family="monospace" font-size="6" fill="#b0a898">
+    <text x="51" y="8">50</text>
+    <text x="101" y="8">100</text>
+    <text x="151" y="8">150</text>
+    <text x="201" y="8">200</text>
+    <text x="251" y="8">250</text>
+    <text x="2" y="53">50</text>
+    <text x="2" y="103">100</text>
+    <text x="2" y="153">150</text>
+    <text x="2" y="203">200</text>
+    <text x="2" y="253">250</text>
+    <text x="2" y="303">300</text>
+    <text x="2" y="353">350</text>
+    <text x="2" y="403">400</text>
+  </g>
+
+  <!-- ── REFERENCE ELEMENTS (lock this layer) ── -->
+  <g id="reference" opacity="0.85">
+
+    <!-- Green Mountains corridor (reference area) -->
+    <path id="ref-green-mountains"
+      d="M108.8 35.95 L136.36 45.32 L155.65 77.11 L144.63 105.08 L132.22 138.55 L118.45 184.87 L108.8 221.78 L99.16 258.57 L99.16 295.23 L108.8 331.78 L111.56 359.11 L118.45 386.37 L122.58 413.57 L88.13 413.57 L81.24 377.29 L74.35 331.78 L67.46 276.92 L74.35 221.78 L88.13 166.36 L104.67 110.66 L115.69 73.37 L108.8 35.95 Z"
+      fill="#7cbc8c" fill-opacity="0.18" stroke="#5a9a6a" stroke-width="0.75" stroke-dasharray="3 2"/>
+
+    <!-- VT Mainland boundary -->
+    <path id="ref-vt-mainland"
+      d="M280.55 14.75 L282.06 33.24 L263.19 64 L276.02 94.68 L253.38 126.28 L207.35 143.57 L208.1 189.21 L196.03 204.39 L183.95 245.75 L159.8 281.94 L149.24 358.95 L150.75 384.83 L138.67 394.77 L137.16 421.57 L149.24 435.43 L37.54 432.46 L36.04 416.61 L40.56 290.97 L18.68 260.84 L26.22 245.75 L14.15 195.29 L30 157.79 L33.77 122.21 L20.94 88.55 L28.49 53.76 L26.98 14.75 L169.61 16.8 Z"
+      fill="none" stroke="#cc2222" stroke-width="1.5"/>
+
+    <!-- Champlain Islands (approximate) -->
+    <g id="ref-islands" fill="none" stroke="#cc6622" stroke-width="1" stroke-dasharray="2.5 1.5">
+      <path id="ref-isle-la-motte" d="M29.57 40.45 L32.05 43.82 L33.7 50 L32.6 53.18 L29.02 51.31 L26.95 45.88 Z"/>
+      <path id="ref-north-hero"    d="M35.08 46.82 L37.84 51.87 L38.66 54.87 L37.7 57.48 L34.67 54.68 L33.29 50.56 Z"/>
+      <path id="ref-grand-isle"    d="M34.26 58.42 L37.56 62.16 L40.59 69.08 L40.04 73.93 L36.05 71.5 L32.46 64.96 L31.91 60.29 Z"/>
+      <path id="ref-south-hero"    d="M33.98 74.31 L37.01 78.23 L37.84 82.33 L35.91 84.95 L32.19 81.77 L30.95 77.11 Z"/>
+    </g>
+
+    <!-- I-89 -->
+    <path id="ref-i89"
+      d="M59.61 16.07 L59.47 52.25 L46.66 115.87 L54.65 127.78 L61.81 135.02 L88.55 151.17 L132.91 155.06 L154 178.76 L162.13 203.89 L169.84 218.46 L168.19 267.74"
+      fill="none" stroke="#1155cc" stroke-width="1.5"/>
+
+    <!-- I-91 -->
+    <path id="ref-i91"
+      d="M140.22 434.01 L135.39 413.21 L144.49 369.84 L150 332.51 L162.13 302.37 L168.19 267.74 L200.71 232.64 L212.28 196.88 L211.87 161.18 L213.11 125.73 L230.19 104.71 L240.94 79.35 L273.87 43.45 L280.35 19.07"
+      fill="none" stroke="#116633" stroke-width="1.5"/>
+
+    <!-- Labels -->
+    <g font-family="sans-serif" font-size="6.5" fill="#333">
+      <text x="168" y="245" transform="rotate(-75,168,245)">I-89</text>
+      <text x="232" y="185">I-91</text>
+      <text x="72" y="215">Green Mtns</text>
+      <text x="20" y="225">VT</text>
+      <text x="17" y="47" font-size="5.5" fill="#cc6622">Islands</text>
+      <text x="17" y="53" font-size="5.5" fill="#cc6622">(approx.)</text>
+    </g>
+
+  </g>
+
+  <!-- ── ARTBOARD BORDER ── -->
+  <rect width="300" height="450" fill="none" stroke="#999" stroke-width="0.5"/>
+
+  <!-- Corner registration marks -->
+  <g stroke="#999" stroke-width="0.5" fill="none">
+    <line x1="0" y1="8" x2="0" y2="0"/><line x1="0" y1="0" x2="8" y2="0"/>
+    <line x1="292" y1="0" x2="300" y2="0"/><line x1="300" y1="0" x2="300" y2="8"/>
+    <line x1="300" y1="442" x2="300" y2="450"/><line x1="300" y1="450" x2="292" y2="450"/>
+    <line x1="8" y1="450" x2="0" y2="450"/><line x1="0" y1="450" x2="0" y2="442"/>
+  </g>
+
+</svg>
